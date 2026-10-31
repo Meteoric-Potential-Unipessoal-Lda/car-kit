@@ -749,5 +749,19 @@
  "k127": "App installed: {0}",
  "k128": "  installing {0} (up to a few minutes, don't touch the unit)...",
  "k136": "couldn't remove {0}: {1}",
- "ui_mirror": "Unit screen"
+ "ui_mirror": "Unit screen",
+ "k140": "QF: the home screen is set by the firmware (car.config) — without root it can't be changed, the stock one stays.",
+ "k141": "{0} is already the home screen",
+ "k142": "couldn't make {0} the home screen (now: {1}) — left as it was",
+ "k143": "the Home button still opens {0} — the firmware handles it itself. Put the stock home screen back.",
+ "k144": "home screen is now: {0} (the Home button checked; the stock one is kept and comes back on rollback)",
+ "k145": "home screen back: {0}",
+ "k146": "…and if {0} is a launcher — make it the home screen (the stock one stays; rollback — option 3)",
+ "k147": "Make the home screen: {0} ({1})",
+ "k148": "home screen (launcher) — the stock one is never disabled",
+ "k149": "{0}: this is not a launcher (no home screen in it) — nothing to assign",
+ "k150": "- {0}: return the home screen {1}",
+ "k151": "New home screen: {0}",
+ "k152": "{0}: «make home» is ticked but the install itself is not — skipped",
+ "k153": "  Installed home screens (launchers): {0}"
 }

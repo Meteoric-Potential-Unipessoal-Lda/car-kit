@@ -748,5 +748,19 @@
  "k127": "App installiert: {0}",
  "k128": "  installiere {0} (bis zu ein paar Minuten, Radio nicht anfassen)...",
  "k136": "{0} ließ sich nicht entfernen: {1}",
- "ui_mirror": "Radio-Bildschirm"
+ "ui_mirror": "Radio-Bildschirm",
+ "k140": "QF: der Startbildschirm ist in der Firmware festgelegt (car.config) — ohne Root nicht änderbar, der originale bleibt.",
+ "k141": "{0} ist schon der Startbildschirm",
+ "k142": "{0} ließ sich nicht als Startbildschirm setzen (jetzt: {1}) — unverändert gelassen",
+ "k143": "die Home-Taste öffnet weiter {0} — die Firmware steuert sie selbst. Originalen Startbildschirm zurückgesetzt.",
+ "k144": "Startbildschirm jetzt: {0} (Home-Taste geprüft; der originale bleibt und kommt beim Rückgängig zurück)",
+ "k145": "Startbildschirm zurück: {0}",
+ "k146": "…und wenn {0} ein Launcher ist — zum Startbildschirm machen (der originale bleibt; Rückgängig — Option 3)",
+ "k147": "Als Startbildschirm setzen: {0} ({1})",
+ "k148": "Startbildschirm (Launcher) — der originale wird nie deaktiviert",
+ "k149": "{0}: kein Launcher — nichts zuzuweisen",
+ "k150": "- {0}: Startbildschirm {1} zurückgeben",
+ "k151": "Neuer Startbildschirm: {0}",
+ "k152": "{0}: „als Startbildschirm“ angehakt, die Installation aber nicht — übersprungen",
+ "k153": "  Installierte Launcher: {0}"
 }

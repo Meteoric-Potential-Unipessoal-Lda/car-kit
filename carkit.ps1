@@ -50,7 +50,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$KitVersion = '0.2'
+$KitVersion = '0.3'
 $KitName = 'car-kit'
 $KitRepo = 'Meteoric-Potential-Unipessoal-Lda/car-kit'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
@@ -1224,6 +1224,10 @@ $WritePatterns = @(
   '^cmd appops set [A-Za-z0-9_.]+ RUN_ANY_IN_BACKGROUND (allow|ignore|default)$',
   '^pm trim-caches \d+G$',
   '^dumpsys deviceidle whitelist [+-][A-Za-z0-9_.]+$',
+  # рабочий стол: назначить домашним (Android 10+ — роль HOME, раньше — set-home-activity) и нажать «Домой» для проверки
+  '^cmd role add-role-holder android\.app\.role\.HOME [A-Za-z0-9_.]+$',
+  '^cmd package set-home-activity [A-Za-z0-9_.]+/[A-Za-z0-9_.]+$',
+  '^input keyevent 3$',
   '^svc power reboot$',
   '^reboot$'
 )
@@ -1408,18 +1412,78 @@ function Install-UserApk([string]$name) {
   Log-Change ("> adb install -r $name`r`n           $out")
   if ($out -notmatch 'Success') { OptLog (L 'k124' $name $out) 'warn'; return $false }
   $new = @((Get-InstalledSet) | Where-Object { -not $before.Contains($_) })
+  if (-not $script:ApkPkgs) { $script:ApkPkgs = @{} }
+  $script:ApkPkgs[$name] = $new
   if ($new.Count -ge 1) {
     foreach ($pk in $new) { Add-Journal @{ t = 'install'; pkg = $pk; file = $name } }
     OptLog (L 'k122' $name ($new -join ', ')) 'ok'; return $true
   }
+  # Обновили уже стоявшее: какой пакет — по имени файла не узнать; для «сделать домашним» ищем среди HOME-кандидатов позже
   OptLog (L 'k123' $name) 'ok'; return $true
 }
 function Remove-UserApk([string]$pkg) {
+  # Удаляем домашний рабочий стол? Сначала возвращаем прежний (иначе магнитола спросит, какой стол открыть)
+  if ((Get-HomeComp).StartsWith($pkg + '/')) {
+    $h = @($script:Journal | Where-Object { [string]$_.t -eq 'home' -and [string]$_.pkg -eq $pkg }) | Select-Object -First 1
+    if (-not $h -and $script:State -and $script:State.before -and $script:State.before.home) { $oc = [string]$script:State.before.home; $h = @{ oldPkg = ($oc -split '/')[0]; oldComp = $oc } }
+    if ($h) { Set-HomeRaw ([string]$h.oldPkg) ([string]$h.oldComp) }
+  }
   $r = Invoke-Adb @('-s', $script:Serial, 'uninstall', $pkg) 120
   $out = (($r.Out + ' ' + $r.Err) -replace "`r", '').Trim()
   Log-Change ("> adb uninstall $pkg`r`n           $out")
   if (-not (Get-InstalledSet).Contains($pkg)) { OptLog (L 'k125' $pkg) 'ok' } else { OptLog (L 'k136' $pkg $out) 'bad' }
 }
+# ----------------------------------------------------------------- рабочий стол (лаунчер)
+# Штатный рабочий стол НЕ отключаем никогда: новый только назначается домашним. После назначения жмём «Домой»:
+# если прошивка всё равно открывает свой стол (так бывает, когда кнопку обрабатывает служба производителя) — сразу возвращаем как было.
+function Get-HomeCands {
+  $r = @()
+  foreach ($l in ((Sh 'cmd package query-activities --brief -a android.intent.action.MAIN -c android.intent.category.HOME') -split "`n")) {
+    if ($l -match '^\s*([A-Za-z0-9_.]+)/([A-Za-z0-9_.]+)\s*$') {
+      $c = $Matches[1] + '/' + $Matches[2]
+      if ($Matches[1] -in @('com.android.settings', 'android', 'com.android.tv.settings') -or $c -match 'FallbackHome|ResolverActivity') { continue }
+      if ($r -notcontains $c) { $r += $c }
+    }
+  }
+  return ,$r
+}
+function Get-TopPkg {
+  $t = Sh 'dumpsys activity activities' 60
+  if ($t -match '(?:mResumedActivity|topResumedActivity|ResumedActivity)[:=]\s*ActivityRecord\{[0-9a-f]+ u\d+ ([A-Za-z0-9_.]+)/') { return $Matches[1] }
+  return ''
+}
+function Set-HomeRaw([string]$pkg, [string]$comp) {
+  if (-not $pkg) { return }
+  if ($script:sdk -ge 29) { [void](ShW "cmd role add-role-holder android.app.role.HOME $pkg") }
+  elseif ($comp) { [void](ShW "cmd package set-home-activity $comp") }
+}
+function Set-Home([string]$comp) {
+  $pkg = ($comp -split '/')[0]
+  if ($script:Plat.Id -eq 'qf') { OptLog (L 'k140') 'warn'; return $false }
+  $oldComp = Get-HomeComp; $oldPkg = ($oldComp -split '/')[0]
+  if ($oldPkg -eq $pkg) { OptLog (L 'k141' $pkg) 'ok'; return $true }
+  if (Test-HomeBad $oldComp) { $oldComp = ''; $oldPkg = '' }
+  Set-HomeRaw $pkg $comp
+  Start-Sleep -Seconds 2
+  $now = Get-HomeComp
+  if (-not $now.StartsWith($pkg + '/')) { OptLog (L 'k142' $pkg $now) 'warn'; Set-HomeRaw $oldPkg $oldComp; return $false }
+  [void](ShW 'input keyevent 3')
+  Start-Sleep -Seconds 4
+  $top = Get-TopPkg
+  if ($top -and $top -ne $pkg) {
+    OptLog (L 'k143' $top) 'warn'
+    Set-HomeRaw $oldPkg $oldComp; [void](ShW 'input keyevent 3')
+    return $false
+  }
+  Add-Journal @{ t = 'home'; pkg = $pkg; comp = $comp; oldPkg = $oldPkg; oldComp = $oldComp }
+  OptLog (L 'k144' $pkg) 'ok'
+  return $true
+}
+function Undo-Home($e) {
+  if ([string]$e.oldPkg) { Set-HomeRaw ([string]$e.oldPkg) ([string]$e.oldComp); [void](ShW 'input keyevent 3') }
+  OptLog (L 'k145' $(if ($e.oldPkg) { [string]$e.oldPkg } else { '?' })) 'ok'
+}
+
 function Clear-Caches {
   $f1 = Get-DataFree
   [void](ShW 'pm trim-caches 999G' 300)
@@ -1444,6 +1508,7 @@ function Undo-Entry($e) {
       OptLog (L 'm147' $($e.key) $(if ($old -and $old -ne 'null') { $old } else { (L 'm146') })) 'ok'
     }
     'install' { Remove-UserApk ([string]$e.pkg) }
+    'home' { Undo-Home $e }
     'idle' {
       [void](ShW "dumpsys deviceidle whitelist -$($e.pkg)")
       OptLog (L 'k044' $($e.pkg)) 'ok'
@@ -1608,9 +1673,17 @@ function Invoke-Optimization {
   }
   foreach ($b in $bgCands) { AddItem 'bg' $b.Pkg ((L 'm190' $($b.Pkg) $(if ($b.Mb -gt 0) { (L 'm189' $($b.Mb)) }))) $true (L 'm191') }
   foreach ($x in $idleCands) { AddItem 'idle' $x.Pkg (L 'k047' $($x.Pkg) $($x.Why)) $true (L 'k048') }
-  foreach ($f in (Get-UserApks)) { AddItem 'apk' $f.Name (L 'k120' $f.Name ([math]::Round($f.Length / 1MB, 1))) $false (L 'k121') }
+  foreach ($f in (Get-UserApks)) {
+    AddItem 'apk' $f.Name (L 'k120' $f.Name ([math]::Round($f.Length / 1MB, 1))) $false (L 'k121')
+    if ($script:Plat.Id -ne 'qf') { AddItem 'apkhome' $f.Name (L 'k146' $f.Name) $false (L 'k121') }
+  }
+  if ($script:Plat.Id -ne 'qf') {
+    foreach ($hc in $homeCands) { if (-not $hc.StartsWith($homePkg + '/')) { AddItem 'home' $hc (L 'k147' (Get-PkgLabel (($hc -split '/')[0])) $hc) $false (L 'k148') } }
+  }
 
   if ($items.Count -eq 0) { OptLog (L 'm192') 'ok'; return }
+  # Для тестов (CI): заранее отметить только пункты этих видов, например CARKIT_TEST_KINDS=apk,apkhome
+  if ($env:CARKIT_TEST_KINDS) { $kk = @($env:CARKIT_TEST_KINDS -split ','); foreach ($it in $items) { $it.On = ($kk -contains $it.Kind) } }
 
   while ($true) {
     Say ''
@@ -1707,6 +1780,18 @@ function Invoke-Optimization {
     foreach ($b in @($sel | Where-Object { $_.Kind -eq 'bg' })) { [void](Restrict-Bg $b.Pkg) }
     foreach ($x in @($sel | Where-Object { $_.Kind -eq 'idle' })) { [void](Add-IdleWhite $x.Pkg) }
     foreach ($x in @($sel | Where-Object { $_.Kind -eq 'apk' })) { [void](Install-UserApk $x.Pkg) }
+    # Рабочий стол: только один (первый отмеченный) — из своего APK или из уже установленных
+    $homeDone = $false
+    foreach ($x in @($sel | Where-Object { $_.Kind -eq 'apkhome' })) {
+      if ($homeDone) { break }
+      $sel2 = @($sel | Where-Object { $_.Kind -eq 'apk' -and $_.Pkg -eq $x.Pkg })
+      if (-not $sel2.Count) { OptLog (L 'k152' $x.Pkg) 'warn'; continue }
+      $pk2 = @(); if ($script:ApkPkgs -and $script:ApkPkgs.ContainsKey($x.Pkg)) { $pk2 = @($script:ApkPkgs[$x.Pkg]) }
+      $hc2 = @((Get-HomeCands) | Where-Object { $pk2 -contains (($_ -split '/')[0]) -or ($pk2.Count -eq 0 -and $_ -match ('(?i)' + [regex]::Escape(($x.Pkg -replace '\.apk$', '' -replace '[-_ ]', '')))) })
+      if (-not $hc2.Count) { OptLog (L 'k149' $x.Pkg) 'warn'; continue }
+      [void](Set-Home $hc2[0]); $homeDone = $true
+    }
+    foreach ($x in @($sel | Where-Object { $_.Kind -eq 'home' })) { if ($homeDone) { break }; [void](Set-Home $x.Pkg); $homeDone = $true }
   }
 
   Say ''
@@ -1789,6 +1874,7 @@ function Invoke-Restore {
       'appops' { (L 'm235' $($e.pkg)) }
       'idle' { (L 'k045' $($e.pkg)) }
       'install' { (L 'k126' $($e.pkg)) }
+      'home' { (L 'k150' $($e.pkg) $(if ($e.oldPkg) { $e.oldPkg } else { '?' })) }
       default { [string]$e.t }
     }
     $t = ($t.Trim() -replace '^-\s*', '')
@@ -2137,6 +2223,7 @@ $homeTxt = Sh 'cmd package resolve-activity --brief -a android.intent.action.MAI
 $homeComp = ''
 foreach ($l in ($homeTxt -split "`n")) { if ($l -match '^\s*([A-Za-z0-9_.]+/[A-Za-z0-9_.$]+)\s*$') { $homeComp = $Matches[1] } }
 $homePkg = ($homeComp -split '/')[0]
+$homeCands = @(Get-HomeCands)
 $roleTxt = ''; $roles = @{}
 if ($sdk -ge 29) { $roleTxt = Sh 'dumpsys role'; $roles = Parse-Roles $roleTxt }
 $ime = (Sh 'settings get secure default_input_method').Trim()
@@ -2529,6 +2616,7 @@ W ''
 W (L 'm411')
 foreach ($k in $set.Keys) { W ("  {0}: {1}" -f $setLabel[$k], $set[$k]) }
 W ((L 'm412') -f $homeComp)
+if ($homeCands.Count -gt 1) { W (L 'k153' ($homeCands -join ', ')) }
 foreach ($k in $roleShort.Keys) { W ((L 'm413') -f $k, $roleShort[$k]) }
 W ((L 'm414') -f $netType)
 W ''
@@ -2571,6 +2659,7 @@ function Save-ClientReport {
           'appops' { [void]$done.Add((L 'c021' (Get-PkgLabel ([string]$e.pkg)))) }
           'idle' { [void]$done.Add((L 'k046' (Get-PkgLabel ([string]$e.pkg)))) }
           'install' { [void]$done.Add((L 'k127' ([string]$e.file))) }
+          'home' { [void]$done.Add((L 'k151' (Get-PkgLabel ([string]$e.pkg)))) }
           'setting' { if ([string]$e.key -like '*animation*' -or [string]$e.key -like 'animator*') { $anim = $true } elseif ([string]$e.key -eq 'private_dns_specifier') { $dnsV = [string]$e.new } }
         }
       }

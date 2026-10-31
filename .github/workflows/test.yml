@@ -2,6 +2,7 @@ name: tests
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -44,3 +45,50 @@ jobs:
       - name: Веб-интерфейс в Windows PowerShell 5.1
         shell: pwsh
         run: python tests/webtest.py powershell
+
+  launcher:
+    name: Сборка car-launcher (APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        env:
+          KS_B64: ${{ secrets.LAUNCHER_KEYSTORE_B64 }}
+          LAUNCHER_KS_PASS: ${{ secrets.LAUNCHER_KS_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/ks.p12"; export LAUNCHER_KEYSTORE="$RUNNER_TEMP/ks.p12"; fi
+          bash launcher/build.sh "$PWD/out/car-launcher.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: car-launcher
+          path: out/car-launcher.apk
+
+  emulator:
+    name: Настоящий Android 11 (эмулятор) — набор + лаунчер
+    needs: launcher
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: car-launcher
+          path: out
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Kit and launcher on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash tests/emu.sh "$PWD/out/car-launcher.apk"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-logs
+          path: emu-logs

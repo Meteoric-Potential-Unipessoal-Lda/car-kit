@@ -388,7 +388,7 @@ main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px}
       if (pf === 'simple') { if (it.kind === 'dns') on = !fam; if (it.tier === 'base' || it.kind === 'bg') on = true; }
       else if (pf === 'kid') { if (it.kind === 'dns') on = fam; }
       else if (pf === 'care') { on = (it.kind === 'disable' && it.tier === 'auto') || it.kind === 'anim'; }
-      else if (pf === 'max') { if (it.kind === 'dns') on = !fam; else if (it.kind === 'third' || it.kind === 'apk' || it.tier === 'ask') on = false; else on = true; }
+      else if (pf === 'max') { if (it.kind === 'dns') on = !fam; else if (it.kind === 'third' || it.kind === 'apk' || it.kind === 'apkhome' || it.kind === 'home' || it.tier === 'ask') on = false; else on = true; }
       S.sel[it.n] = on;
     }
   }

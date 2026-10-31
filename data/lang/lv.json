@@ -748,5 +748,19 @@
  "k127": "Lietotne instalēta: {0}",
  "k128": "  instalēju {0} (līdz dažām minūtēm, bloku neaiztikt)...",
  "k136": "neizdevās izdzēst {0}: {1}",
- "ui_mirror": "Bloka ekrāns"
+ "ui_mirror": "Bloka ekrāns",
+ "k140": "QF: sākuma ekrānu nosaka programmaparatūra (car.config) — bez root to nevar mainīt, paliek oriģinālais.",
+ "k141": "{0} jau ir sākuma ekrāns",
+ "k142": "neizdevās padarīt {0} par sākuma ekrānu (tagad: {1}) — atstāts kā bija",
+ "k143": "poga «Sākums» joprojām atver {0} — to apstrādā programmaparatūra. Atjaunots oriģinālais ekrāns.",
+ "k144": "sākuma ekrāns tagad: {0} (poga «Sākums» pārbaudīta; oriģinālais saglabāts un atgriezīsies atsaucot)",
+ "k145": "sākuma ekrāns atjaunots: {0}",
+ "k146": "…un ja {0} ir palaidējs — padarīt to par sākuma ekrānu (oriģinālais paliek; atsaukt — punkts 3)",
+ "k147": "Padarīt par sākuma ekrānu: {0} ({1})",
+ "k148": "sākuma ekrāns (palaidējs) — oriģinālais nekad netiek atspējots",
+ "k149": "{0}: tas nav palaidējs — nav ko piešķirt",
+ "k150": "- {0}: atjaunot sākuma ekrānu {1}",
+ "k151": "Jauns sākuma ekrāns: {0}",
+ "k152": "{0}: atzīmēts «padarīt par sākumu», bet ne pati instalēšana — izlaists",
+ "k153": "  Instalētie palaidēji: {0}"
 }

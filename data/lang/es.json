@@ -748,5 +748,19 @@
  "k127": "App instalada: {0}",
  "k128": "  instalando {0} (hasta unos minutos, no toque el autorradio)...",
  "k136": "no se pudo eliminar {0}: {1}",
- "ui_mirror": "Pantalla del autorradio"
+ "ui_mirror": "Pantalla del autorradio",
+ "k140": "QF: la pantalla de inicio la fija el firmware (car.config) — sin root no se cambia, queda la original.",
+ "k141": "{0} ya es la pantalla de inicio",
+ "k142": "no se pudo poner {0} como inicio (ahora: {1}) — se dejó como estaba",
+ "k143": "el botón Inicio sigue abriendo {0} — lo gestiona el firmware. Se restauró la pantalla original.",
+ "k144": "pantalla de inicio ahora: {0} (botón Inicio comprobado; la original sigue y vuelve al deshacer)",
+ "k145": "pantalla de inicio restaurada: {0}",
+ "k146": "…y si {0} es un launcher — ponerlo como inicio (la original se queda; deshacer — opción 3)",
+ "k147": "Poner como inicio: {0} ({1})",
+ "k148": "pantalla de inicio (launcher) — la original nunca se desactiva",
+ "k149": "{0}: no es un launcher — nada que asignar",
+ "k150": "- {0}: restaurar la pantalla de inicio {1}",
+ "k151": "Nueva pantalla de inicio: {0}",
+ "k152": "{0}: «poner como inicio» marcado pero la instalación no — omitido",
+ "k153": "  Launchers instalados: {0}"
 }

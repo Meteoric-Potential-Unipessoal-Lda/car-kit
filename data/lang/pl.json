@@ -748,5 +748,19 @@
  "k127": "Zainstalowano aplikację: {0}",
  "k128": "  instaluję {0} (do kilku minut, nie dotykaj radia)...",
  "k136": "nie udało się usunąć {0}: {1}",
- "ui_mirror": "Ekran radia"
+ "ui_mirror": "Ekran radia",
+ "k140": "QF: ekran główny ustala oprogramowanie (car.config) — bez roota się go nie zmieni, zostaje fabryczny.",
+ "k141": "{0} już jest ekranem głównym",
+ "k142": "nie udało się ustawić {0} jako ekranu głównego (teraz: {1}) — zostawiono jak było",
+ "k143": "przycisk „Home” nadal otwiera {0} — obsługuje go oprogramowanie. Przywrócono fabryczny ekran.",
+ "k144": "ekran główny teraz: {0} (przycisk Home sprawdzony; fabryczny zostaje i wróci przy cofnięciu)",
+ "k145": "przywrócono ekran główny: {0}",
+ "k146": "…a jeśli {0} to launcher — ustawić jako ekran główny (fabryczny zostaje; cofnięcie — opcja 3)",
+ "k147": "Ustaw jako ekran główny: {0} ({1})",
+ "k148": "ekran główny (launcher) — fabryczny nigdy nie jest wyłączany",
+ "k149": "{0}: to nie launcher — nie ma czego ustawić",
+ "k150": "- {0}: przywrócić ekran główny {1}",
+ "k151": "Nowy ekran główny: {0}",
+ "k152": "{0}: zaznaczono „ustaw jako główny”, ale nie samą instalację — pominięto",
+ "k153": "  Zainstalowane launchery: {0}"
 }

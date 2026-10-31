@@ -748,5 +748,19 @@
  "k127": "Appli installée : {0}",
  "k128": "  installation de {0} (quelques minutes, ne touchez pas l’autoradio)...",
  "k136": "impossible de supprimer {0} : {1}",
- "ui_mirror": "Écran de l’autoradio"
+ "ui_mirror": "Écran de l’autoradio",
+ "k140": "QF : l’écran d’accueil est fixé par le firmware (car.config) — sans root impossible de le changer, l’original reste.",
+ "k141": "{0} est déjà l’écran d’accueil",
+ "k142": "impossible de définir {0} comme accueil (actuel : {1}) — laissé tel quel",
+ "k143": "le bouton Accueil ouvre toujours {0} — le firmware le gère lui-même. Accueil d’origine remis.",
+ "k144": "écran d’accueil désormais : {0} (bouton Accueil vérifié ; l’original reste et revient à l’annulation)",
+ "k145": "écran d’accueil rétabli : {0}",
+ "k146": "…et si {0} est un lanceur — en faire l’accueil (l’original reste ; annulation — option 3)",
+ "k147": "Définir comme accueil : {0} ({1})",
+ "k148": "écran d’accueil (lanceur) — l’original n’est jamais désactivé",
+ "k149": "{0} : ce n’est pas un lanceur — rien à définir",
+ "k150": "- {0} : rétablir l’accueil {1}",
+ "k151": "Nouvel écran d’accueil : {0}",
+ "k152": "{0} : « définir comme accueil » coché mais pas l’installation — ignoré",
+ "k153": "  Lanceurs installés : {0}"
 }

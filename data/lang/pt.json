@@ -748,5 +748,19 @@
  "k127": "App instalada: {0}",
  "k128": "  a instalar {0} (até uns minutos, não toque no autorrádio)...",
  "k136": "não foi possível remover {0}: {1}",
- "ui_mirror": "Ecrã do autorrádio"
+ "ui_mirror": "Ecrã do autorrádio",
+ "k140": "QF: o ecrã inicial é definido pelo firmware (car.config) — sem root não muda, fica o original.",
+ "k141": "{0} já é o ecrã inicial",
+ "k142": "não foi possível definir {0} como ecrã inicial (agora: {1}) — ficou como estava",
+ "k143": "o botão Início continua a abrir {0} — o firmware trata-o. Reposto o ecrã original.",
+ "k144": "ecrã inicial agora: {0} (botão Início verificado; o original fica e volta ao reverter)",
+ "k145": "ecrã inicial reposto: {0}",
+ "k146": "…e se {0} for um launcher — torná-lo ecrã inicial (o original fica; reverter — opção 3)",
+ "k147": "Tornar ecrã inicial: {0} ({1})",
+ "k148": "ecrã inicial (launcher) — o original nunca é desativado",
+ "k149": "{0}: não é um launcher — nada a definir",
+ "k150": "- {0}: repor o ecrã inicial {1}",
+ "k151": "Novo ecrã inicial: {0}",
+ "k152": "{0}: «tornar inicial» marcado, mas a instalação não — ignorado",
+ "k153": "  Launchers instalados: {0}"
 }

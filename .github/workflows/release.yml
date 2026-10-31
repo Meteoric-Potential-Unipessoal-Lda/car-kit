@@ -1,7 +1,7 @@
 name: release
 
 # При публикации релиза (Releases -> Draft a new release -> тег vX.Y -> Publish) собирает car-kit-X.Y.zip
-# (папка car-kit/ без тестов и служебных файлов, start.command с правом запуска) и прикладывает к релизу с SHA-256.
+# (папка car-kit/ без тестов и служебных файлов, start.command с правом запуска; car-launcher собирается и кладётся в apk/) и прикладывает к релизу с SHA-256.
 on:
   release:
     types: [published]
@@ -19,6 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Build car-launcher (signed with the repository key)
+        env:
+          KS_B64: ${{ secrets.LAUNCHER_KEYSTORE_B64 }}
+          LAUNCHER_KS_PASS: ${{ secrets.LAUNCHER_KS_PASS }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          if [ -z "$KS_B64" ]; then echo "::warning::LAUNCHER_KEYSTORE_B64 secret is not set — car-launcher is signed with a throwaway test key"; else echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/ks.p12"; export LAUNCHER_KEYSTORE="$RUNNER_TEMP/ks.p12"; fi
+          VER="${TAG#v}"; export LAUNCHER_VERSION_NAME="$VER"
+          export LAUNCHER_VERSION_CODE="$(python3 -c "import sys; p=(sys.argv[1].split('.')+['0','0'])[:3]; print(int(p[0])*10000+int(p[1])*100+int(p[2]))" "$VER")"
+          bash launcher/build.sh "$PWD/apk/car-launcher.apk"
+          rm -rf launcher/build
       - name: Build zip
         id: b
         env:
@@ -28,7 +39,7 @@ jobs:
           python3 - "$VER" <<'PY'
           import os, sys, zipfile, hashlib
           ver = sys.argv[1]
-          skip_dirs = {'.git', '.github', 'tests', 'dev', 'tools', 'reports', 'backups'}
+          skip_dirs = {'.git', '.github', 'tests', 'dev', 'tools', 'reports', 'backups', 'launcher'}
           skip_files = {'.gitattributes', '.gitignore'}
           out = 'car-kit-%s.zip' % ver
           files = []
@@ -36,7 +47,7 @@ jobs:
               dn[:] = sorted(d for d in dn if not (dp == '.' and d in skip_dirs))
               for f in sorted(fn):
                   rel = os.path.relpath(os.path.join(dp, f), '.')
-                  if rel in skip_files or rel == out or (rel.startswith('apk/') and rel.endswith('.apk')): continue
+                  if rel in skip_files or rel == out or (rel.startswith('apk/') and rel.endswith('.apk') and rel != 'apk/car-launcher.apk'): continue
                   files.append(rel)
           with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
               for rel in files:

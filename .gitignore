@@ -6,3 +6,5 @@ backups/
 tests/mockstate.json
 # свои APK мастера
 apk/*.apk
+!apk/car-launcher.apk
+launcher/build/

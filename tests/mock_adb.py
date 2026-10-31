@@ -70,6 +70,8 @@ allp = sysp + list(third)
 for _p in st.get('installed', []):
     third[_p] = 'com.android.shell'; allp.append(_p)
 
+LAUNCHER_PKG = 'net.zherdyev.carlauncher'
+LAUNCHER_COMP = LAUNCHER_PKG + '/.MainActivity'
 def installed(): return [p for p in allp if p not in st['uninst']]
 def plist(ps): return '\n'.join('package:' + p for p in ps)
 
@@ -119,7 +121,17 @@ def shell(cmd):
         if p == 'com.google.android.videos': return 'Packages:\n  Package [%s] (abc):\n    userId=1000\n    sharedUser=SharedUserSetting{1a2b android.uid.system/1000}' % p
         return 'Packages:\n  Package [%s] (abc):\n    userId=10%03d' % (p, len(p))
     if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd and os.environ.get('MOCK_BREAK') in st['disabled']: return 'android/com.android.internal.app.ResolverActivity'
-    if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd: return 'priority=0 isDefault=true\n' + home
+    if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd: return 'priority=0 isDefault=true\n' + st.get('home', home)
+    if cmd.startswith('cmd package query-activities') and 'HOME' in cmd:
+        r = [home, 'com.android.settings/.FallbackHome'] + [LAUNCHER_COMP for _ in [0] if LAUNCHER_PKG in installed()]
+        return '\n'.join(r)
+    if a[:4] == ['cmd', 'role', 'add-role-holder', 'android.app.role.HOME']:
+        p = a[4]; st['home'] = LAUNCHER_COMP if p == LAUNCHER_PKG else home; save(); return ''
+    if a[:3] == ['cmd', 'package', 'set-home-activity']: st['home'] = a[3]; save(); return 'Success'
+    if cmd == 'input keyevent 3':
+        st['top'] = home if os.environ.get('MOCK_HOMEBLOCK') else st.get('home', home); save(); return ''
+    if cmd == 'dumpsys activity activities':
+        return 'ACTIVITY MANAGER ACTIVITIES\n  mResumedActivity: ActivityRecord{1a2b3c u0 %s t7}' % st.get('top', st.get('home', home))
     if cmd.startswith('cmd package resolve-activity') and 'SETTINGS' in cmd: return 'priority=0\ncom.android.settings/.Settings'
     if cmd.startswith('cmd package query-activities') and 'LAUNCHER' in cmd: return '\n'.join(p + '/.Main' for p in launch if p in installed() and p not in st['disabled'])
     if cmd == 'dumpsys role': return 'Role Manager:\n  user_id=0\n    roles=[\n      {\n        name=android.app.role.HOME\n        holders=%s\n      }\n    ]' % home.split('/')[0]
@@ -204,7 +216,7 @@ if c == 'connect':
     st['conn'] = 1; save(); print('connected to %s' % ADDR); sys.exit(0)
 if c == 'install':
     apk = args[-1]
-    p = 'com.example.' + os.path.basename(apk).split('.')[0].lower().replace('-', '')
+    p = LAUNCHER_PKG if 'launcher' in os.path.basename(apk).lower() else 'com.example.' + os.path.basename(apk).split('.')[0].lower().replace('-', '')
     if p not in third: third[p] = 'com.android.shell'
     st.setdefault('installed', [])
     if p not in st['installed']: st['installed'].append(p)

@@ -748,5 +748,19 @@
  "k127": "App installata: {0}",
  "k128": "  installo {0} (qualche minuto, non toccare lo stereo)...",
  "k136": "impossibile rimuovere {0}: {1}",
- "ui_mirror": "Schermo dello stereo"
+ "ui_mirror": "Schermo dello stereo",
+ "k140": "QF: la schermata home la decide il firmware (car.config) — senza root non si cambia, resta quella originale.",
+ "k141": "{0} è già la schermata home",
+ "k142": "impossibile impostare {0} come home (ora: {1}) — lasciato com’era",
+ "k143": "il tasto Home apre ancora {0} — lo gestisce il firmware. Ripristinata la home originale.",
+ "k144": "schermata home ora: {0} (tasto Home verificato; l’originale resta e torna col ripristino)",
+ "k145": "schermata home ripristinata: {0}",
+ "k146": "…e se {0} è un launcher — renderlo la home (l’originale resta; ripristino — opzione 3)",
+ "k147": "Imposta come home: {0} ({1})",
+ "k148": "schermata home (launcher) — l’originale non viene mai disattivata",
+ "k149": "{0}: non è un launcher — niente da impostare",
+ "k150": "- {0}: ripristinare la home {1}",
+ "k151": "Nuova schermata home: {0}",
+ "k152": "{0}: «rendi home» spuntato ma l’installazione no — saltato",
+ "k153": "  Launcher installati: {0}"
 }

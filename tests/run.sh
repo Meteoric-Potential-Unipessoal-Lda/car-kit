@@ -16,6 +16,7 @@ run() {
   mkdir -p "$kit/data/lang"
   cp "$ROOT/carkit.ps1" "$kit/"; cp "$ROOT"/data/*.tsv "$kit/data/"; cp "$ROOT"/data/lang/*.json "$kit/data/lang/"
   if [ -n "${TEST_APK:-}" ]; then mkdir -p "$kit/apk"; head -c 4096 /dev/urandom > "$kit/apk/navi-test.apk"; fi
+  if [ -n "${TEST_LAUNCHER:-}" ]; then mkdir -p "$kit/apk"; head -c 4096 /dev/urandom > "$kit/apk/car-launcher.apk"; fi
   export MOCK_BRAND=$brand MOCK_STATE="$WORK/$brand.json"
   [ -z "$keep" ] && rm -f "$MOCK_STATE"
   printf "$input" | timeout 900 pwsh -NoProfile -File "$kit/carkit.ps1" -AdbPath "$ADB" -Lang ru -NoUpdateCheck -NoPause > "$WORK/$name.log" 2>&1
@@ -96,6 +97,20 @@ state mtc 'com.example.navitest'
 run m_apkr mtc '3\n\n\nда\n' keep
 expect m_apkr 'удалено приложение, которое ставил набор: com.example.navitest'
 nostate mtc 'navitest'
+
+# 6в. Свой лаунчер: установить и сделать домашним (кнопка «Домой» проверена), откат возвращает штатный и удаляет
+TEST_LAUNCHER=1 CARKIT_TEST_KINDS=apk,apkhome run l_home fyt '2\nТ\n\nда\n\n\n'
+expect l_home 'установлено car-launcher.apk: net.zherdyev.carlauncher'
+expect l_home 'домашний экран теперь: net.zherdyev.carlauncher'
+state fyt '"home": "net.zherdyev.carlauncher/.MainActivity"'
+run l_rest fyt '3\n\n\nда\n' keep
+expect l_rest 'домашний экран возвращён: com.android.launcher6'
+expect l_rest 'удалено приложение, которое ставил набор: net.zherdyev.carlauncher'
+state fyt '"home": "com.android.launcher6/com.android.launcher6.Launcher"'
+# 6г. Прошивка перехватывает «Домой» -> сразу возвращаем штатный, в журнал не пишем
+MOCK_HOMEBLOCK=1 TEST_LAUNCHER=1 CARKIT_TEST_KINDS=apk,apkhome run l_block fyt '2\nТ\n\nда\n\n\n'
+expect l_block 'кнопка «Домой» всё равно открывает com.android.launcher6'
+state fyt '"home": "com.android.launcher6/com.android.launcher6.Launcher"'
 
 # 7. Reglink (MTK): DuraSpeed, Adups
 run r_diag reglink '1\nТ\n'

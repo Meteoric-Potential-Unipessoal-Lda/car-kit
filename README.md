@@ -21,6 +21,7 @@ Based on [phone-kit](https://github.com/Meteoric-Potential-Unipessoal-Lda/phone-
 - **Head unit screen on the laptop** — built-in [scrcpy](https://github.com/Genymobile/scrcpy): see and control the unit with the mouse (also through AnyDesk); car audio stays in the car.
 - **Settings snapshot** (read-only) — all Android settings, platform properties, FYT `/oem/app/config.txt` (car model, CAN), to restore by hand after a reset or flashing.
 - **Extra checks** — wrong clock (breaks HTTPS), auto time off, location off, weak Wi-Fi to the hotspot.
+- **car-launcher** — our own lightweight home screen for head units (`launcher/`, plain Java, no Gradle; built and signed by GitHub Actions, shipped as `apk/car-launcher.apk`): Navigation / Music / Phone / Radio / All apps tiles, 6 favorites, clock, auto-start of navigation or music after power-on and after sleep. The kit can make it (or Agama, CarWebGuru…) the home screen, presses Home to verify and rolls back if the firmware intercepts the button; the stock launcher is never disabled.
 - **Your own APKs** — put `.apk` files into `apk/`; the plan offers to install them (unchecked), rollback removes what the kit installed.
 - **Help for enabling ADB** — developer options, network ADB, common factory-menu passwords (shown, never guessed), `adb tcpip 5555`, Android 11+ pairing.
 - **Reboot check** — finds the unit again on the network after reboot (address may change), warns when network ADB is not persistent.
@@ -36,7 +37,7 @@ Based on [phone-kit](https://github.com/Meteoric-Potential-Unipessoal-Lda/phone-
 
 ## Tests
 
-`bash tests/run.sh` — scenarios on a mock adb (`tests/mock_adb.py`) for FYT, Teyes, Topway TS, MTCE, Reglink, Android Automotive and an unknown unit; `tests/webtest.py` — the browser interface; GitHub Actions also parse the script in Windows PowerShell 5.1.
+`bash tests/run.sh` — scenarios on a mock adb; `tests/emu.sh` — the kit and car-launcher on a real Android 11 emulator in CI; (`tests/mock_adb.py`) for FYT, Teyes, Topway TS, MTCE, Reglink, Android Automotive and an unknown unit; `tests/webtest.py` — the browser interface; GitHub Actions also parse the script in Windows PowerShell 5.1.
 
 ## License
 
