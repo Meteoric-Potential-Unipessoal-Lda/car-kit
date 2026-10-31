@@ -1466,6 +1466,8 @@ function Set-Home([string]$comp) {
   if ($script:Plat.Id -eq 'qf') { OptLog (L 'k140') 'warn'; return $false }
   $oldComp = Get-HomeComp; $oldPkg = ($oldComp -split '/')[0]
   if ($oldPkg -eq $pkg) { OptLog (L 'k141' $pkg) 'ok'; return $true }
+  # Сразу после установки второго лаунчера Android 11 может отвечать «выбор» (ResolverActivity) — берём стол из снимка «до»
+  if ((Test-HomeBad $oldComp) -and $script:State -and $script:State.before -and $script:State.before.home -and -not (Test-HomeBad ([string]$script:State.before.home))) { $oldComp = [string]$script:State.before.home; $oldPkg = ($oldComp -split '/')[0] }
   if (Test-HomeBad $oldComp) { $oldComp = ''; $oldPkg = '' }
   Set-HomeRaw $pkg $comp
   Start-Sleep -Seconds 2

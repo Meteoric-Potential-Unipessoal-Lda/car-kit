@@ -121,6 +121,8 @@ def shell(cmd):
         if p == 'com.google.android.videos': return 'Packages:\n  Package [%s] (abc):\n    userId=1000\n    sharedUser=SharedUserSetting{1a2b android.uid.system/1000}' % p
         return 'Packages:\n  Package [%s] (abc):\n    userId=10%03d' % (p, len(p))
     if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd and os.environ.get('MOCK_BREAK') in st['disabled']: return 'android/com.android.internal.app.ResolverActivity'
+    # как Android 11: поставили второй лаунчер, а домашний ещё не выбран -> «выбор» (ResolverActivity)
+    if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd and LAUNCHER_PKG in installed() and 'home' not in st: return 'android/com.android.internal.app.ResolverActivity'
     if cmd.startswith('cmd package resolve-activity') and 'HOME' in cmd: return 'priority=0 isDefault=true\n' + st.get('home', home)
     if cmd.startswith('cmd package query-activities') and 'HOME' in cmd:
         r = [home, 'com.android.settings/.FallbackHome'] + [LAUNCHER_COMP for _ in [0] if LAUNCHER_PKG in installed()]
