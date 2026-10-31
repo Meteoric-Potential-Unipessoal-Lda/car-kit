@@ -18,7 +18,7 @@ expect() { if grep -qF -- "$2" "$LOGS/$1.log"; then echo "PASS $1: $2"; else ech
 reject() { if grep -qF -- "$2" "$LOGS/$1.log"; then echo "FAIL $1: есть «$2»"; FAIL=1; else echo "PASS $1: нет «$2»"; fi; }
 
 # Android 11: «cmd role get-role-holders» ещё нет — домашний смотрим через resolve-activity
-homepkg() { adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | grep -E '^[A-Za-z0-9_.]+/' | tail -1 | cut -d/ -f1; }
+homepkg() { adb wait-for-device; adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | grep -E '^[A-Za-z0-9_.]+/' | tail -1 | cut -d/ -f1; }
 HOME0="$(homepkg)"
 echo "stock home: $HOME0"
 

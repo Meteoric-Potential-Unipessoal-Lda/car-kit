@@ -985,7 +985,8 @@ function Select-Phone {
   while ($true) {
     $devs = @(Get-AdbDevices)
     # adb-сервер только что перезапущен: кабельные устройства и эмулятор появляются через пару секунд
-    for ($w = 0; $first -and $devs.Count -eq 0 -and $w -lt 8; $w++) { Start-Sleep -Seconds 1; $devs = @(Get-AdbDevices) }
+    # ...а сразу после перезапуска бывают на миг «offline»/«connecting» — ждём, пока станут «device»
+    for ($w = 0; $first -and $w -lt 12 -and ($devs.Count -eq 0 -or (@($devs | Where-Object { $_.State -in @('offline', 'connecting', 'authorizing') }).Count -and -not @($devs | Where-Object { $_.State -eq 'device' }).Count)); $w++) { Start-Sleep -Seconds 1; $devs = @(Get-AdbDevices) }
     $ready = @($devs | Where-Object { $_.State -eq 'device' })
     if ($first -and $ready.Count -eq 1) {
       Ok ((L 'm102') -f (Get-Model $ready[0].Serial), $ready[0].Serial)

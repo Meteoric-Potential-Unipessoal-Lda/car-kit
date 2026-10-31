@@ -231,6 +231,9 @@ if c == 'uninstall':
 if c == 'disconnect': st['conn'] = 0; save(); sys.exit(0)
 if c == 'devices':
     print('List of devices attached')
+    # MOCK_FLAKY: первые два «adb devices» после старта — устройство «offline» (как эмулятор/USB сразу после перезапуска adb)
+    if os.environ.get('MOCK_FLAKY') and st.get('flaky', 0) < 2:
+        st['flaky'] = st.get('flaky', 0) + 1; save(); print('%s\toffline' % ('USB123' if USB else ADDR)); print(''); sys.exit(0)
     if USB: print('%s\tdevice' % 'USB123')
     elif st.get('conn'): print('%s\t%s' % (ADDR, 'device'))
     print(''); sys.exit(0)

@@ -147,6 +147,11 @@ CARKIT_TEST_SCAN=, run x_ip fyt '1\nТ\ni\n192.168.43.120\n'
 expect x_ip 'подключаюсь к 192.168.43.120:5555'
 expect x_ip 'Архив:'
 
+# 12б. Сразу после перезапуска adb устройство на миг «offline» -> набор ждёт и выбирает его сам
+MOCK_USB=1 MOCK_FLAKY=1 run x_flaky fyt '1\nТ\n'
+expect x_flaky 'Найдена магнитола'
+expect x_flaky 'Архив:'
+
 # 13. Пункт U на подставных данных Windows
 if pwsh -NoProfile -File "$ROOT/tests/usbtest.ps1"; then echo "PASS usbtest"; else echo "FAIL usbtest"; FAIL=1; fi
 
