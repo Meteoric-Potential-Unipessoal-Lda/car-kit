@@ -9,7 +9,8 @@ OUT="${1:-$HERE/build/car-launcher.apk}"
 SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
 [ -n "$SDK" ] || { echo "ANDROID_HOME is not set"; exit 1; }
 BT="$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)"
-PLAT="$(ls -d "$SDK"/platforms/android-* | sort -V | tail -1)"
+# только стабильные платформы (android-35), без бета-версий вроде android-37.2-beta3
+PLAT="$(ls -d "$SDK"/platforms/android-* | grep -E '/android-[0-9]+$' | sort -V | tail -1)"
 JAR="$PLAT/android.jar"
 VCODE="${LAUNCHER_VERSION_CODE:-3}"
 VNAME="${LAUNCHER_VERSION_NAME:-0.3}"

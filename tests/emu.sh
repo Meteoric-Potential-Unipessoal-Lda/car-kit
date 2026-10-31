@@ -17,7 +17,9 @@ run() { local name=$1 input=$2; printf "$input" | timeout 900 pwsh -NoProfile -F
 expect() { if grep -qF -- "$2" "$LOGS/$1.log"; then echo "PASS $1: $2"; else echo "FAIL $1: нет «$2»"; FAIL=1; fi; }
 reject() { if grep -qF -- "$2" "$LOGS/$1.log"; then echo "FAIL $1: есть «$2»"; FAIL=1; else echo "PASS $1: нет «$2»"; fi; }
 
-HOME0="$(adb shell cmd role get-role-holders android.app.role.HOME | tr -d '\r')"
+# Android 11: «cmd role get-role-holders» ещё нет — домашний смотрим через resolve-activity
+homepkg() { adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tr -d '\r' | tail -1 | cut -d/ -f1; }
+HOME0="$(homepkg)"
 echo "stock home: $HOME0"
 
 # 1. Диагностика на живом Android: всё разбирается, ничего не меняется
@@ -30,7 +32,7 @@ reject e_diag 'не найден'
 CARKIT_TEST_KINDS=apk,apkhome run e_home '2\nЭмулятор\nда\n\nда\n\n\n'
 expect e_home 'установлено car-launcher.apk: net.zherdyev.carlauncher'
 expect e_home 'домашний экран теперь: net.zherdyev.carlauncher'
-H1="$(adb shell cmd role get-role-holders android.app.role.HOME | tr -d '\r')"
+H1="$(homepkg)"
 [ "$H1" = "net.zherdyev.carlauncher" ] && echo "PASS role HOME = carlauncher" || { echo "FAIL role HOME = $H1"; FAIL=1; }
 adb shell input keyevent 3; sleep 4
 adb shell uiautomator dump /sdcard/ui.xml >/dev/null 2>&1; adb pull /sdcard/ui.xml "$LOGS/ui.xml" >/dev/null 2>&1
@@ -41,7 +43,7 @@ adb shell dumpsys meminfo net.zherdyev.carlauncher | grep -E 'TOTAL( PSS)?:' | h
 # 3. Откат: вернуть штатный рабочий стол и удалить лаунчер
 run e_rest '3\n\n\nда\n'
 expect e_rest 'домашний экран возвращён'
-H2="$(adb shell cmd role get-role-holders android.app.role.HOME | tr -d '\r')"
+H2="$(homepkg)"
 [ "$H2" = "$HOME0" ] && echo "PASS role HOME вернулся: $H2" || { echo "FAIL role HOME после отката: $H2 (было $HOME0)"; FAIL=1; }
 adb shell pm list packages | grep -q net.zherdyev.carlauncher && { echo "FAIL лаунчер не удалён"; FAIL=1; } || echo "PASS лаунчер удалён"
 

@@ -984,6 +984,8 @@ function Select-Phone {
   $first = $true; $scanned = $false
   while ($true) {
     $devs = @(Get-AdbDevices)
+    # adb-сервер только что перезапущен: кабельные устройства и эмулятор появляются через пару секунд
+    for ($w = 0; $first -and $devs.Count -eq 0 -and $w -lt 8; $w++) { Start-Sleep -Seconds 1; $devs = @(Get-AdbDevices) }
     $ready = @($devs | Where-Object { $_.State -eq 'device' })
     if ($first -and $ready.Count -eq 1) {
       Ok ((L 'm102') -f (Get-Model $ready[0].Serial), $ready[0].Serial)
@@ -1454,8 +1456,10 @@ function Get-TopPkg {
 }
 function Set-HomeRaw([string]$pkg, [string]$comp) {
   if (-not $pkg) { return }
-  if ($script:sdk -ge 29) { [void](ShW "cmd role add-role-holder android.app.role.HOME $pkg") }
-  elseif ($comp) { [void](ShW "cmd package set-home-activity $comp") }
+  $o = ''
+  if ($script:sdk -ge 29) { $o = ShW "cmd role add-role-holder android.app.role.HOME $pkg" }
+  # Android 9 и старше — или прошивка без «cmd role»: старый способ
+  if ($comp -and ($script:sdk -lt 29 -or $o -match '(?i)unknown|error|exception|not found')) { [void](ShW "cmd package set-home-activity $comp") }
 }
 function Set-Home([string]$comp) {
   $pkg = ($comp -split '/')[0]
