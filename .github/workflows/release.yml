@@ -1,0 +1,61 @@
+name: release
+
+# При публикации релиза (Releases -> Draft a new release -> тег vX.Y -> Publish) собирает car-kit-X.Y.zip
+# (папка car-kit/ без тестов и служебных файлов, start.command с правом запуска) и прикладывает к релизу с SHA-256.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag of an existing release (e.g. v0.2)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build zip
+        id: b
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          VER="${TAG#v}"
+          python3 - "$VER" <<'PY'
+          import os, sys, zipfile, hashlib
+          ver = sys.argv[1]
+          skip_dirs = {'.git', '.github', 'tests', 'dev', 'tools', 'reports', 'backups'}
+          skip_files = {'.gitattributes', '.gitignore'}
+          out = 'car-kit-%s.zip' % ver
+          files = []
+          for dp, dn, fn in os.walk('.'):
+              dn[:] = sorted(d for d in dn if not (dp == '.' and d in skip_dirs))
+              for f in sorted(fn):
+                  rel = os.path.relpath(os.path.join(dp, f), '.')
+                  if rel in skip_files or rel == out or (rel.startswith('apk/') and rel.endswith('.apk')): continue
+                  files.append(rel)
+          with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for rel in files:
+                  zi = zipfile.ZipInfo('car-kit/' + rel.replace(os.sep, '/'), date_time=(2026, 1, 1, 0, 0, 0))
+                  zi.compress_type = zipfile.ZIP_DEFLATED
+                  zi.create_system = 3
+                  zi.external_attr = (0o100000 | (0o755 if rel.endswith('.command') else 0o644)) << 16
+                  z.writestr(zi, open(rel, 'rb').read())
+          h = hashlib.sha256(open(out, 'rb').read()).hexdigest()
+          print(out, len(files), 'files', h)
+          open(os.environ['GITHUB_OUTPUT'], 'a').write('zip=%s\nsha=%s\n' % (out, h))
+          PY
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          gh release upload "$TAG" "${{ steps.b.outputs.zip }}" --clobber
+          BODY="$(gh release view "$TAG" --json body -q .body)"
+          case "$BODY" in *"SHA-256"*) ;; *) gh release edit "$TAG" --notes "$BODY
+
+          SHA-256 (${{ steps.b.outputs.zip }}): \`${{ steps.b.outputs.sha }}\`" ;; esac

@@ -1,0 +1,8 @@
+# Скачивается prepare.bat (ADB, PowerShell для Mac, драйвер Google USB)
+tools/
+# Отчёты и журналы отката — данные клиентов, в репозиторий не кладём
+reports/
+backups/
+tests/mockstate.json
+# свои APK мастера
+apk/*.apk

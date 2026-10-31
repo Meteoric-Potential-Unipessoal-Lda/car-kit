@@ -1,0 +1,59 @@
+name: Отчёт о проверке / Test report
+description: "Результат проверки car-kit на магнитоле / car-kit result on a head unit"
+title: "[Тест] <марка и модель магнитолы>"
+labels: ["test-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо! Архив отчёта (папка reports) не содержит серийных номеров, IMEI и MAC, но содержит список приложений — прикладывайте, если не против.
+        Thanks! The report archive has no serials / IMEI / MAC, but lists installed apps — attach it if you don't mind.
+  - type: input
+    id: unit
+    attributes:
+      label: "Магнитола / Head unit"
+      description: "Марка, модель, где куплена (например Teyes CC3 2K, Joying, «2 din Android с Aliexpress»)"
+    validations:
+      required: true
+  - type: input
+    id: detected
+    attributes:
+      label: "Что определил набор / What the kit detected"
+      description: "Строка «Магнитола: ...» или «Платформа не распознана»; версия набора"
+  - type: dropdown
+    id: connect
+    attributes:
+      label: "Как подключились / How it connected"
+      options:
+        - Нашёл сам в сети Wi-Fi (S)
+        - IP вручную (I)
+        - Код сопряжения, Android 11+ (W)
+        - Кабель USB
+        - Не подключилось / Didn't connect
+    validations:
+      required: true
+  - type: checkboxes
+    id: done
+    attributes:
+      label: "Что делали / What was run"
+      options:
+        - label: 1 — диагностика / diagnostics
+        - label: 2 — оптимизация / optimization
+        - label: перезагрузка с проверкой / reboot check
+        - label: 3 — откат / rollback
+        - label: экран магнитолы на ноутбуке (scrcpy) / unit screen
+  - type: textarea
+    id: works
+    attributes:
+      label: "После оптимизации работает? / Works after optimization?"
+      description: "Радио, Bluetooth, камера заднего хода, кнопки руля, звук, CarPlay / Android Auto, навигация, данные CAN"
+  - type: textarea
+    id: problems
+    attributes:
+      label: "Что не так / What went wrong"
+      description: "Красные и жёлтые строки, что перестало работать, как включали ADB и какой пароль заводского меню подошёл"
+  - type: textarea
+    id: files
+    attributes:
+      label: "Отчёт / Report"
+      description: "Перетащите сюда report.txt или архив .zip из папки reports"

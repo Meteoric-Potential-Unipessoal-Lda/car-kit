@@ -1,0 +1,84 @@
+package	level	ru	en	uk
+com.syu.ms	protect	FYT: главная служба магнитолы (MCU, радио, звук, кнопки руля, CAN, сон по ACC)	FYT: main head unit service (MCU, radio, sound, steering keys, CAN, ACC sleep)	FYT: головна служба магнітоли (MCU, радіо, звук, кнопки керма, CAN, сон за ACC)
+com.syu.canbus	protect	FYT: CAN-шина, данные машины (климат, двери, парктроник)	FYT: CAN bus, car data (climate, doors, parking sensors)	FYT: CAN-шина, дані авто (клімат, двері, парктронік)
+com.syu.bt	protect	FYT: Bluetooth-телефон	FYT: Bluetooth phone	FYT: Bluetooth-телефон
+com.syu.ps	protect	FYT: служба Bluetooth/телефона	FYT: Bluetooth/phone service	FYT: служба Bluetooth/телефона
+com.syu.steer	protect	FYT: обучение кнопок руля	FYT: steering wheel key learning	FYT: навчання кнопок керма
+com.syu.settings	protect	FYT: настройки магнитолы	FYT: head unit settings	FYT: налаштування магнітоли
+com.syu.cs	protect	FYT: служба прошивки	FYT: firmware service	FYT: служба прошивки
+com.syu.ss	protect	FYT: служба прошивки	FYT: firmware service	FYT: служба прошивки
+com.syu.us	protect	FYT: служба прошивки	FYT: firmware service	FYT: служба прошивки
+com.syu.protocolupdate	protect	FYT: обновление протокола CAN/MCU	FYT: CAN/MCU protocol update	FYT: оновлення протоколу CAN/MCU
+com.syu.rearcamera	protect	FYT: камера заднего хода	FYT: reverse camera	FYT: камера заднього ходу
+com.syu.carlink	protect	FYT: CarPlay / Android Auto	FYT: CarPlay / Android Auto	FYT: CarPlay / Android Auto
+com.syu.carlink2	protect	FYT: CarPlay / Android Auto	FYT: CarPlay / Android Auto	FYT: CarPlay / Android Auto
+com.android.launcher4	protect	FYT/Reglink: рабочий стол магнитолы	FYT/Reglink: head unit home screen	FYT/Reglink: робочий стіл магнітоли
+com.android.launcher6	protect	FYT: рабочий стол магнитолы	FYT: head unit home screen	FYT: робочий стіл магнітоли
+com.sprd.systemupdate	protect	Unisoc: обновление прошивки	Unisoc: firmware update	Unisoc: оновлення прошивки
+com.spreadtrum.sgps	protect	Unisoc: помощь GPS	Unisoc: GPS assist	Unisoc: допомога GPS
+com.syu.radio	ask	FYT: радио FM/AM	FYT: FM/AM radio	FYT: радіо FM/AM
+com.syu.carradio	ask	FYT: радио FM/AM	FYT: FM/AM radio	FYT: радіо FM/AM
+com.syu.eq	ask	FYT: эквалайзер/DSP (окно настроек; сам звук — в com.syu.ms)	FYT: equalizer/DSP (settings window; the sound itself is in com.syu.ms)	FYT: еквалайзер/DSP (вікно налаштувань; сам звук — у com.syu.ms)
+com.syu.av	ask	FYT: AV-вход	FYT: AV input	FYT: AV-вхід
+com.syu.dvd	ask	FYT: DVD	FYT: DVD	FYT: DVD
+com.syu.air	ask	FYT: всплывающее окно климата	FYT: climate popup	FYT: спливне вікно клімату
+com.syu.voice	ask	FYT: голосовой помощник	FYT: voice assistant	FYT: голосовий помічник
+com.syu.carmark	ask	FYT: линии парковки / оверлей 360	FYT: parking lines / 360 overlay	FYT: лінії паркування / оверлей 360
+com.syu.rightcamera	ask	FYT: правая камера	FYT: right-side camera	FYT: права камера
+com.syu.frontvideo	ask	FYT: передняя камера	FYT: front camera	FYT: передня камера
+com.syu.gesture	ask	FYT: жесты	FYT: gestures	FYT: жести
+com.syu.calibration	ask	FYT: калибровка сенсора экрана	FYT: touch calibration	FYT: калібрування сенсора екрана
+com.syu.window	ask	FYT: большие часы на широком экране	FYT: big clock frame on wide screens	FYT: великий годинник на широкому екрані
+com.syu.music	ask	FYT: штатный музыкальный плеер (USB/флешка)	FYT: stock music player (USB stick)	FYT: штатний музичний плеєр (USB/флешка)
+com.syu.video	ask	FYT: штатный видеоплеер	FYT: stock video player	FYT: штатний відеоплеєр
+com.syu.gallery	ask	FYT: штатная галерея	FYT: stock gallery	FYT: штатна галерея
+com.syu.filemanager	ask	FYT: штатный файловый менеджер	FYT: stock file manager	FYT: штатний файловий менеджер
+com.ex.dabplayer.pad	ask	Радио DAB+	DAB+ radio	Радіо DAB+
+com.hualai	ask	FYT: предустановленное приложение Hualai (назначение не проверено)	FYT: preinstalled Hualai app (purpose not verified)	FYT: передвстановлений застосунок Hualai (призначення не перевірено)
+com.txznet.smartadapter	ask	Голосовой помощник TXZ (китайский)	TXZ voice assistant (Chinese)	Голосовий помічник TXZ (китайський)
+com.qf.framework	protect	QF: главная служба (MCU, кнопки, громкость, радио)	QF: main service (MCU, keys, volume, radio)	QF: головна служба (MCU, кнопки, гучність, радіо)
+com.qf.carsettings	protect	QF: настройки машины и сна	QF: car and standby settings	QF: налаштування авто й сну
+com.qf.vehicle	protect	QF: CAN-шина	QF: CAN bus	QF: CAN-шина
+com.qf.bluetooth	protect	QF: Bluetooth	QF: Bluetooth	QF: Bluetooth
+com.qf.backcar	protect	QF: камера заднего/переднего хода	QF: reverse/front camera	QF: камера заднього/переднього ходу
+com.android.launcher.horizon.city	protect	QF: рабочий стол магнитолы	QF: head unit home screen	QF: робочий стіл магнітоли
+com.syt.tmps	ask	Датчики давления шин (TPMS)	Tyre pressure sensors (TPMS)	Датчики тиску шин (TPMS)
+com.tw.car	protect	Topway: служба машины	Topway: car service	Topway: служба авто
+com.tw.carchoose	protect	Topway: выбор модели машины/CAN	Topway: car model/CAN selection	Topway: вибір моделі авто/CAN
+com.tw.carapps	protect	Topway: приложения машины	Topway: car apps	Topway: застосунки авто
+com.tw.ac2	protect	Topway: климат	Topway: climate	Topway: клімат
+com.tv.carinfoservice	protect	Topway: данные машины	Topway: car info service	Topway: дані авто
+android.microntek.mtcser	protect	MTCD/MTCE: служба Bluetooth	MTCD/MTCE: Bluetooth service	MTCD/MTCE: служба Bluetooth
+com.microntek.music	ask	MTCD/MTCE: штатный музыкальный плеер	MTCD/MTCE: stock music player	MTCD/MTCE: штатний музичний плеєр
+com.microntek.media	ask	MTCD/MTCE: штатный медиаплеер	MTCD/MTCE: stock media player	MTCD/MTCE: штатний медіаплеєр
+com.rock.gota	ask	Rockchip: обновление прошивки по сети	Rockchip: OTA firmware update	Rockchip: оновлення прошивки по мережі
+net.easyconn	ask	EasyConnection: старое зеркалирование телефона	EasyConnection: old phone mirroring	EasyConnection: старе дзеркалювання телефона
+com.reglink.services	protect	Reglink: главная служба (и сон по ACC)	Reglink: main service (and ACC sleep)	Reglink: головна служба (і сон за ACC)
+com.reglink.launcher4	protect	Reglink: рабочий стол магнитолы	Reglink: head unit home screen	Reglink: робочий стіл магнітоли
+com.baony.avm360	protect	Камера 360°	360° camera	Камера 360°
+com.hcn.autocan	protect	HCN: CAN-шина	HCN: CAN bus	HCN: CAN-шина
+com.hcn.autoradio	protect	HCN: радио (тюнер)	HCN: radio (tuner)	HCN: радіо (тюнер)
+com.hcn.bluetoothservice	protect	HCN: Bluetooth	HCN: Bluetooth	HCN: Bluetooth
+com.hcn.dvr	ask	HCN: видеорегистратор	HCN: dash cam (DVR)	HCN: відеореєстратор
+com.mediatek.duraspeed	ask	MediaTek DuraSpeed: закрывает фоновые приложения (навигацию, музыку)	MediaTek DuraSpeed: closes background apps (navigation, music)	MediaTek DuraSpeed: закриває фонові застосунки (навігацію, музику)
+com.adups.fota	ok	Adups FOTA: «обновлятор», известный сбором данных (Kryptowire, 2016)	Adups FOTA: «updater» known for data collection (Kryptowire, 2016)	Adups FOTA: «оновлювач», відомий збором даних (Kryptowire, 2016)
+com.adups.fota.sysoper	ok	Adups FOTA: системная часть «обновлятора» со сбором данных	Adups FOTA: system part of the data-collecting «updater»	Adups FOTA: системна частина «оновлювача» зі збором даних
+com.atoto.keepaliveservice	protect	ATOTO: служба «не выгружать»	ATOTO: keep-alive service	ATOTO: служба «не вивантажувати»
+org.atoto.gps	protect	ATOTO: GPS	ATOTO: GPS	ATOTO: GPS
+com.hugoteam.airtalk_wireless	protect	ATOTO: беспроводные CarPlay / Android Auto	ATOTO: wireless CarPlay / Android Auto	ATOTO: бездротові CarPlay / Android Auto
+com.synmoon.carkit	ask	ATOTO: автомобильный набор Synmoon	ATOTO: Synmoon car kit	ATOTO: автомобільний набір Synmoon
+com.atoto.speechtotext	ask	ATOTO: распознавание речи	ATOTO: speech-to-text	ATOTO: розпізнавання мовлення
+com.atoto.carsysteminfo	ask	ATOTO: сведения о системе	ATOTO: system info	ATOTO: відомості про систему
+com.aidl.atoto.store	ask	ATOTO: магазин приложений	ATOTO: app store	ATOTO: магазин застосунків
+com.atoto.uvc2camera	ask	ATOTO: USB-камера	ATOTO: USB camera	ATOTO: USB-камера
+com.zjinnova.zlink	protect	ZLink: CarPlay / Android Auto	ZLink: CarPlay / Android Auto	ZLink: CarPlay / Android Auto
+com.zjinnova.zlink5	protect	ZLink: CarPlay / Android Auto	ZLink: CarPlay / Android Auto	ZLink: CarPlay / Android Auto
+cn.manstep.phonemirrorBox	protect	AutoKit / Carlinkit: CarPlay / Android Auto	AutoKit / Carlinkit: CarPlay / Android Auto	AutoKit / Carlinkit: CarPlay / Android Auto
+cn.manstep.phonemirrorBox.nomap	protect	AutoKit / Carlinkit: CarPlay / Android Auto	AutoKit / Carlinkit: CarPlay / Android Auto	AutoKit / Carlinkit: CarPlay / Android Auto
+com.autokit	protect	AutoKit: CarPlay / Android Auto	AutoKit: CarPlay / Android Auto	AutoKit: CarPlay / Android Auto
+com.suding.speedplay	protect	SpeedPlay: CarPlay / Android Auto	SpeedPlay: CarPlay / Android Auto	SpeedPlay: CarPlay / Android Auto
+com.tlink.carplay	protect	TLink: CarPlay / Android Auto	TLink: CarPlay / Android Auto	TLink: CarPlay / Android Auto
+com.google.android.projection.gearhead	protect	Android Auto	Android Auto	Android Auto
+cn.kuwo.kwmusicauto	ok	Kuwo: китайский музыкальный сервис для машин	Kuwo: Chinese in-car music service	Kuwo: китайський музичний сервіс для авто
+com.tencent.qqmusiccar	ok	QQ Music: китайский музыкальный сервис для машин	QQ Music: Chinese in-car music service	QQ Music: китайський музичний сервіс для авто
+com.ximalaya.ting.android.car	ok	Ximalaya: китайские аудиокниги/подкасты для машин	Ximalaya: Chinese in-car audiobooks/podcasts	Ximalaya: китайські аудіокниги/подкасти для авто
