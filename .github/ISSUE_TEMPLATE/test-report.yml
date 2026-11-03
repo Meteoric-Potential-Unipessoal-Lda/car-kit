@@ -29,6 +29,7 @@ body:
         - IP вручную (I)
         - Код сопряжения, Android 11+ (W)
         - Кабель USB
+        - Приложение car-kit Mobile на телефоне
         - Не подключилось / Didn't connect
     validations:
       required: true

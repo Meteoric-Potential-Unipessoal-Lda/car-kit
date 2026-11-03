@@ -17,6 +17,13 @@
 5. **Сначала пункт 1 «Диагностика»** — он ничего не меняет. Пришлите результат (см. ниже).
 6. Если хотите — пункт 2 «Оптимизация». Проверьте после неё: радио, Bluetooth (звонки и музыка), камеру заднего хода, кнопки руля, звук, CarPlay / Android Auto, навигацию. Что-то не так — пункт 3 «Откат».
 
+## Без ноутбука: приложение car-kit Mobile
+
+1. Скачайте `car-kit-mobile-<версия>.apk` из того же релиза на телефон и установите (разрешите установку из этого источника).
+2. Включите на телефоне точку доступа, подключите к ней магнитолу, на магнитоле включите «Отладку по USB» (и «ADB по сети», если есть).
+3. В приложении — «Найти магнитолу», на магнитоле — «Разрешить». Дальше так же: сначала только диагностика, потом по желанию план и проверка.
+4. «Отправить отчёт» — текст отчёта в Telegram / WhatsApp / почту; приложите его к issue. Нужен порт 5555 — если приложение пишет «порт закрыт» или «беспроводная отладка», напишите, какая у вас магнитола.
+
 ## Что прислать
 
 Создайте [issue «Отчёт о проверке»](https://github.com/Meteoric-Potential-Unipessoal-Lda/car-kit/issues/new?template=test-report.yml): модель магнитолы, что набор определил, что сработало, что нет.
@@ -36,4 +43,5 @@
 2. Head unit: Settings → About → tap *Build number* 7× → *Developer options* → *USB debugging*. Laptop and unit on the same Wi-Fi (a phone hotspot is easiest).
 3. The kit finds the unit; tap *Allow* on its screen. **Start with option 1 (diagnostics)** — it changes nothing.
 4. Optionally run option 2 (optimization) and check radio, Bluetooth, reverse camera, steering keys, sound, CarPlay / Android Auto. Option 3 rolls everything back.
-5. Open a «Test report» issue with the unit model and results. The report archive (folder `reports`) has no serials / IMEI / MAC, but lists the unit's apps and settings — attach only `report.txt` if you prefer.
+5. No laptop? Install `car-kit-mobile-<version>.apk` from the same release on an Android phone, turn on its hotspot, connect the unit to it, tap «Find the head unit» and «Allow» on the unit. Network ADB on port 5555 is required.
+6. Open a «Test report» issue with the unit model and results. The report archive (folder `reports`) has no serials / IMEI / MAC, but lists the unit's apps and settings — attach only `report.txt` if you prefer.

@@ -1,0 +1,71 @@
+key	ru	uk	en	pt	es	fr	it	de	lv	pl
+a000	car-kit Mobile	car-kit Mobile	car-kit Mobile							
+a001	Телефон раздаёт Wi-Fi, магнитола подключена к нему — приложение найдёт её и безопасно почистит по ADB. Ноутбук не нужен.	Телефон роздає Wi-Fi, магнітола підключена до нього — застосунок знайде її та безпечно почистить по ADB. Ноутбук не потрібен.	The phone shares Wi-Fi, the head unit is connected to it — the app finds the unit and safely cleans it up over ADB. No laptop needed.							
+a002	Найти магнитолу	Знайти магнітолу	Find the head unit							
+a003	IP магнитолы, например 192.168.43.120	IP магнітоли, наприклад 192.168.43.120	Head unit IP, e.g. 192.168.43.120							
+a004	Подключить	Підключити	Connect							
+a005	Как включить ADB на магнитоле	Як увімкнути ADB на магнітолі	How to enable ADB on the head unit							
+a006	Язык	Мова	Language							
+a007	Ключ этого телефона: {0}	Ключ цього телефону: {0}	This phone's key: {0}							
+a010	Подключаюсь к {0}…	Підключаюся до {0}…	Connecting to {0}…							
+a011	На экране магнитолы нажмите «Разрешить» (поставьте галочку «Всегда разрешать»). Жду до 60 секунд…	На екрані магнітоли натисніть «Дозволити» (поставте галочку «Завжди дозволяти»). Чекаю до 60 секунд…	Tap «Allow» on the head unit screen (tick «Always allow»). Waiting up to 60 seconds…							
+a012	Порт 5555 закрыт: на магнитоле не включён ADB по сети. Откройте «Как включить ADB на магнитоле».	Порт 5555 закритий: на магнітолі не увімкнено ADB по мережі. Відкрийте «Як увімкнути ADB на магнітолі».	Port 5555 is closed: network ADB is not enabled on the head unit. Open «How to enable ADB on the head unit».							
+a013	Это порт беспроводной отладки Android 11+ (с шифрованием) — приложение его пока не поддерживает. Нужен обычный ADB по сети на порту 5555.	Це порт бездротового налагодження Android 11+ (із шифруванням) — застосунок його поки не підтримує. Потрібен звичайний ADB по мережі на порту 5555.	This is an Android 11+ wireless debugging port (encrypted) — the app does not support it yet. Plain network ADB on port 5555 is needed.							
+a014	Магнитола не разрешила подключение: нажмите «Разрешить» на её экране и попробуйте ещё раз.	Магнітола не дозволила підключення: натисніть «Дозволити» на її екрані та спробуйте ще раз.	The head unit did not allow the connection: tap «Allow» on its screen and try again.							
+a015	Не удалось подключиться: {0}	Не вдалося підключитися: {0}	Could not connect: {0}							
+a016	Магнитола не отвечает по адресу {0}. Проверьте, что она в той же сети Wi-Fi.	Магнітола не відповідає за адресою {0}. Перевірте, що вона в тій самій мережі Wi-Fi.	The head unit does not answer at {0}. Check that it is on the same Wi-Fi network.							
+a020	План оптимизации	План оптимізації	Optimization plan							
+a021	Отправить отчёт	Надіслати звіт	Send report							
+a022	Откат по журналу	Відкат за журналом	Roll back from the log							
+a023	Отключиться	Відключитися	Disconnect							
+a024	Диагностика магнитолы (только чтение)…	Діагностика магнітоли (лише читання)…	Head unit diagnostics (read-only)…							
+a025	Замечаний нет.	Зауважень немає.	No issues found.							
+a026	Магнитола: {0}	Магнітола: {0}	Head unit: {0}							
+a027	Android {0} (SDK {1}); память: свободно {2} из {3} МБ; хранилище: свободно {4} МБ	Android {0} (SDK {1}); пам'ять: вільно {2} з {3} МБ; сховище: вільно {4} МБ	Android {0} (SDK {1}); memory: {2} of {3} MB free; storage: {4} MB free							
+a030	Применить отмеченное ({0})	Застосувати відмічене ({0})	Apply selected ({0})							
+a031	Снять все галочки	Зняти всі галочки	Uncheck all							
+a032	Применить {0} изменений? Всё записывается в журнал на телефоне — откатить можно в любой момент, даже через месяц.	Застосувати {0} змін? Усе записується в журнал на телефоні — відкотити можна будь-коли, навіть через місяць.	Apply {0} changes? Everything is written to a log on the phone — you can roll back at any time, even a month later.							
+a033	Да, применить	Так, застосувати	Yes, apply							
+a034	Нет	Ні	No							
+a035	Платформа не распознана: заранее отмечено только проверенное. Смотрите план внимательно.	Платформу не розпізнано: заздалегідь відмічено лише перевірене. Дивіться план уважно.	Platform not recognized: only verified items are pre-selected. Check the plan carefully.							
+a036	Нечего оптимизировать — магнитола уже в порядке.	Нічого оптимізувати — магнітола вже в порядку.	Nothing to optimize — the head unit is already fine.							
+a037	Отмечено: {0}	Відмічено: {0}	Selected: {0}							
+a038	Ничего не отмечено.	Нічого не відмічено.	Nothing selected.							
+a040	Применяю изменения… Не выключайте зажигание и не уводите магнитолу из сети.	Застосовую зміни… Не вимикайте запалювання та не відключайте магнітолу від мережі.	Applying changes… Keep the ignition on and the head unit on the network.							
+a041	Проверьте радио, Bluetooth-телефон, камеру заднего хода, кнопки руля, CarPlay / Android Auto. Если что-то не так — «Откатить всё».	Перевірте радіо, Bluetooth-телефон, камеру заднього ходу, кнопки керма, CarPlay / Android Auto. Якщо щось не так — «Відкотити все».	Check the radio, Bluetooth phone, reverse camera, steering wheel keys, CarPlay / Android Auto. If anything is wrong — «Roll back everything».							
+a042	Откатить всё	Відкотити все	Roll back everything							
+a043	Готово	Готово	Done							
+a044	Откатить отмеченное ({0})	Відкотити відмічене ({0})	Roll back selected ({0})							
+a045	Откат выполнен.	Відкат виконано.	Rollback finished.							
+a046	Откатить {0} изменений?	Відкотити {0} змін?	Roll back {0} changes?							
+a047	Журнал пуст — откатывать нечего.	Журнал порожній — відкочувати нічого.	The log is empty — nothing to roll back.							
+a048	Журнал записан для другой прошивки ({0}). Откат всё равно возможен, но проверьте результат.	Журнал записано для іншої прошивки ({0}). Відкат усе одно можливий, але перевірте результат.	The log was written for different firmware ({0}). Rollback is still possible, but check the result.							
+a050	Как включить ADB на магнитоле	Як увімкнути ADB на магнітолі	How to enable ADB on the head unit							
+a051	1) На телефоне включите точку доступа (Wi-Fi), на магнитоле подключитесь к ней.	1) На телефоні увімкніть точку доступу (Wi-Fi), на магнітолі підключіться до неї.	1) Turn on the hotspot (Wi-Fi) on the phone and connect the head unit to it.							
+a052	2) Магнитола: Настройки → «Об устройстве» → 7 раз нажать «Номер сборки» → появятся «Для разработчиков» → включить «Отладку по USB».	2) Магнітола: Налаштування → «Про пристрій» → 7 разів натиснути «Номер збірки» → з'являться «Для розробників» → увімкнути «Налагодження USB».	2) Head unit: Settings → «About» → tap «Build number» 7 times → «Developer options» appear → turn on «USB debugging».							
+a053	3) Если есть пункт «ADB по сети» / «Отладка по сети» / «ADB Wi-Fi» (в «Для разработчиков» или в Заводских настройках) — включите. Многие FYT / Teyes открывают порт 5555 сразу после шага 2.	3) Якщо є пункт «ADB по мережі» / «Налагодження по мережі» / «ADB Wi-Fi» (у «Для розробників» або в Заводських налаштуваннях) — увімкніть. Багато FYT / Teyes відкривають порт 5555 одразу після кроку 2.	3) If there is «ADB over network» / «Network debugging» / «ADB Wi-Fi» (in Developer options or the factory settings) — turn it on. Many FYT / Teyes units open port 5555 right after step 2.							
+a054	4) Нажмите «Найти магнитолу». Не нашлась — посмотрите IP магнитолы (Настройки → Wi-Fi → эта сеть) и введите его вручную.	4) Натисніть «Знайти магнітолу». Не знайшлася — подивіться IP магнітоли (Налаштування → Wi-Fi → ця мережа) і введіть його вручну.	4) Tap «Find the head unit». Not found — look up the unit's IP (Settings → Wi-Fi → this network) and enter it by hand.							
+a055	Порта 5555 нет совсем (часто Android 10 и старше): один раз нужен компьютер — команда adb tcpip 5555 по кабелю или набор car-kit на ноутбуке. Работает до перезагрузки магнитолы.	Порту 5555 немає зовсім (часто Android 10 і старші): один раз потрібен комп'ютер — команда adb tcpip 5555 кабелем або набір car-kit на ноутбуці. Працює до перезавантаження магнітоли.	No port 5555 at all (often Android 10 and older): a computer is needed once — adb tcpip 5555 over a cable, or the car-kit desktop kit. Works until the head unit reboots.							
+a056	Беспроводная отладка Android 11+ («подключение по коду») приложением пока не поддерживается — нужен ADB по сети на порту 5555.	Бездротове налагодження Android 11+ («підключення за кодом») застосунком поки не підтримується — потрібен ADB по мережі на порту 5555.	Android 11+ wireless debugging («pair with code») is not supported by the app yet — network ADB on port 5555 is needed.							
+a060	Ищу магнитолу в сети {0}…	Шукаю магнітолу в мережі {0}…	Looking for the head unit on {0}…							
+a061	Найдено: {0}	Знайдено: {0}	Found: {0}							
+a062	Ничего не найдено. Проверьте, что магнитола подключена к Wi-Fi этого телефона и на ней включён ADB по сети.	Нічого не знайдено. Перевірте, що магнітола підключена до Wi-Fi цього телефону і на ній увімкнено ADB по мережі.	Nothing found. Check that the head unit is connected to this phone's Wi-Fi and network ADB is enabled on it.							
+a063	Нет сети Wi-Fi: включите точку доступа на телефоне или подключитесь к той же сети, что и магнитола.	Немає мережі Wi-Fi: увімкніть точку доступу на телефоні або підключіться до тієї ж мережі, що й магнітола.	No Wi-Fi network: turn on the hotspot on the phone or join the same network as the head unit.							
+a070	Отмена	Скасувати	Cancel							
+a071	Назад	Назад	Back							
+a072	Закрыть	Закрити	Close							
+a080	Связь с магнитолой потеряна: {0}. Сделанные изменения записаны в журнал — переподключитесь и при необходимости сделайте откат.	Зв'язок із магнітолою втрачено: {0}. Зроблені зміни записано в журнал — перепідключіться і за потреби зробіть відкат.	Connection to the head unit lost: {0}. Changes made so far are in the log — reconnect and roll back if needed.							
+a101	Свойства системы и платформа магнитолы	Властивості системи та платформа магнітоли	System properties and head unit platform							
+a140	Подозрительные приложения: {0}	Підозрілі застосунки: {0}	Suspicious apps: {0}							
+a141	  (по желанию)	  (за бажанням)	  (optional)							
+a150	car-kit Mobile {0} — отчёт о магнитоле	car-kit Mobile {0} — звіт про магнітолу	car-kit Mobile {0} — head unit report							
+a151	Замечания:	Зауваження:	Observations:							
+a152	Что сделано:	Що зроблено:	What was done:							
+a153	Свободно ОЗУ: {0} → {1} МБ; процессов: {2} → {3}; отключено пакетов: {4} → {5}	Вільно ОЗП: {0} → {1} МБ; процесів: {2} → {3}; вимкнено пакетів: {4} → {5}	Free RAM: {0} → {1} MB; processes: {2} → {3}; disabled packages: {4} → {5}							
+a154	Журнал ({0} изменений; откат — в приложении):	Журнал ({0} змін; відкат — у застосунку):	Log ({0} changes; roll back in the app):							
+a160	Журнал этой магнитолы от {0}: {1} изменений	Журнал цієї магнітоли від {0}: {1} змін	Log for this head unit from {0}: {1} changes							
+a161	Отключено от магнитолы.	Відключено від магнітоли.	Disconnected from the head unit.							
+a170	Готово. Перезагрузите магнитолу полностью (выключить-включить зажигание мало — она только засыпает) и проверьте ещё раз.	Готово. Перезавантажте магнітолу повністю (вимкнути-увімкнути запалювання мало — вона лише засинає) і перевірте ще раз.	Done. Fully reboot the head unit (ignition off/on is not enough — it only sleeps) and check again.							
+a171	Подключено: {0}	Підключено: {0}	Connected: {0}							
+a172	Магнитолы в сети	Магнітоли в мережі	Head units on the network							
+a173	Повторить	Повторити	Retry							

@@ -1,7 +1,8 @@
 name: release
 
 # При публикации релиза (Releases -> Draft a new release -> тег vX.Y -> Publish) собирает car-kit-X.Y.zip
-# (папка car-kit/ без тестов и служебных файлов, start.command с правом запуска; car-launcher собирается и кладётся в apk/) и прикладывает к релизу с SHA-256.
+# (папка car-kit/ без тестов и служебных файлов, start.command с правом запуска; car-launcher собирается и кладётся в apk/)
+# и car-kit-mobile-X.Y.apk (приложение для телефона) и прикладывает к релизу с SHA-256.
 on:
   release:
     types: [published]
@@ -29,7 +30,9 @@ jobs:
           VER="${TAG#v}"; export LAUNCHER_VERSION_NAME="$VER"
           export LAUNCHER_VERSION_CODE="$(python3 -c "import sys; p=(sys.argv[1].split('.')+['0','0'])[:3]; print(int(p[0])*10000+int(p[1])*100+int(p[2]))" "$VER")"
           bash launcher/build.sh "$PWD/apk/car-launcher.apk"
-          rm -rf launcher/build
+          export MOBILE_VERSION_NAME="$VER" MOBILE_VERSION_CODE="$LAUNCHER_VERSION_CODE"
+          bash mobile/build.sh "$RUNNER_TEMP/car-kit-mobile-$VER.apk"
+          rm -rf launcher/build mobile/build
       - name: Build zip
         id: b
         env:
@@ -39,7 +42,7 @@ jobs:
           python3 - "$VER" <<'PY'
           import os, sys, zipfile, hashlib
           ver = sys.argv[1]
-          skip_dirs = {'.git', '.github', 'tests', 'dev', 'tools', 'reports', 'backups', 'launcher'}
+          skip_dirs = {'.git', '.github', 'tests', 'dev', 'tools', 'reports', 'backups', 'launcher', 'mobile'}
           skip_files = {'.gitattributes', '.gitignore'}
           out = 'car-kit-%s.zip' % ver
           files = []
@@ -65,8 +68,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          gh release upload "$TAG" "${{ steps.b.outputs.zip }}" --clobber
+          VER="${TAG#v}"; MAPK="$RUNNER_TEMP/car-kit-mobile-$VER.apk"
+          gh release upload "$TAG" "${{ steps.b.outputs.zip }}" "$MAPK" --clobber
+          MSHA="$(sha256sum "$MAPK" | cut -d' ' -f1)"
           BODY="$(gh release view "$TAG" --json body -q .body)"
           case "$BODY" in *"SHA-256"*) ;; *) gh release edit "$TAG" --notes "$BODY
 
-          SHA-256 (${{ steps.b.outputs.zip }}): \`${{ steps.b.outputs.sha }}\`" ;; esac
+          SHA-256 (${{ steps.b.outputs.zip }}): \`${{ steps.b.outputs.sha }}\`
+          SHA-256 (car-kit-mobile-$VER.apk): \`$MSHA\`" ;; esac

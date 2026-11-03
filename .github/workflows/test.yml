@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pwsh -v && python3 --version
+      - run: pwsh -v && python3 --version && java -version
       - run: bash tests/run.sh
+      - name: car-kit Mobile — логика, протокол ADB, совпадение плана с набором
+        run: bash tests/mobile/run.sh
 
   windows-ps51:
     name: Windows PowerShell 5.1
@@ -47,7 +49,7 @@ jobs:
         run: python tests/webtest.py powershell
 
   launcher:
-    name: Сборка car-launcher (APK)
+    name: Сборка APK (car-launcher, car-kit Mobile)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,13 +60,16 @@ jobs:
         run: |
           if [ -n "$KS_B64" ]; then echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/ks.p12"; export LAUNCHER_KEYSTORE="$RUNNER_TEMP/ks.p12"; fi
           bash launcher/build.sh "$PWD/out/car-launcher.apk"
+          bash mobile/build.sh "$PWD/out/car-kit-mobile.apk"
       - uses: actions/upload-artifact@v4
         with:
-          name: car-launcher
-          path: out/car-launcher.apk
+          name: apks
+          path: |
+            out/car-launcher.apk
+            out/car-kit-mobile.apk
 
   emulator:
-    name: Настоящий Android 11 (эмулятор) — набор + лаунчер
+    name: Настоящий Android 11 (эмулятор) — набор, лаунчер, car-kit Mobile
     needs: launcher
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -72,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: car-launcher
+          name: apks
           path: out
       - name: Enable KVM
         run: |
@@ -86,7 +91,7 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: bash tests/emu.sh "$PWD/out/car-launcher.apk"
+          script: bash tests/emu.sh "$PWD/out/car-launcher.apk" "$PWD/out/car-kit-mobile.apk"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

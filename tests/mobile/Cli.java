@@ -1,0 +1,107 @@
+package net.zherdyev.carkit;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * Проверка логики car-kit Mobile на обычной Java (без телефона):
+ *   --mock                   магнитола = tests/mock_adb.py (MOCK_BRAND и др. из окружения)
+ *   --adb HOST:PORT --key F  настоящий протокол ADB (fake_adbd.py или эмулятор), ключ adbkey (PKCS#8)
+ *   --mode diag|apply|rollback|both   --kinds anim,disable   --lang ru   --journal файл
+ */
+public final class Cli {
+  public static void main(String[] a) throws Exception {
+    System.setOut(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8"));
+    String root = new File(".").getCanonicalPath();
+    String mode = "diag", kinds = "anim,disable", lang = "ru", adb = null, keyFile = null, journal = null;
+    boolean mock = false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].equals("--mock")) mock = true;
+      else if (a[i].equals("--adb")) adb = a[++i];
+      else if (a[i].equals("--key")) keyFile = a[++i];
+      else if (a[i].equals("--mode")) mode = a[++i];
+      else if (a[i].equals("--kinds")) kinds = a[++i];
+      else if (a[i].equals("--lang")) lang = a[++i];
+      else if (a[i].equals("--journal")) journal = a[++i];
+      else if (a[i].equals("--root")) root = a[++i];
+    }
+    final String R = root;
+    Lang.Source src = new Lang.Source() {
+      public InputStream open(String name) throws IOException {
+        File f = name.equals("strings.tsv") ? new File(R, "mobile/strings.tsv") : new File(R, "data/" + name);
+        return new FileInputStream(f);
+      }
+    };
+    Lang L = new Lang(lang, src);
+    Data d = new Data(src, lang);
+    Sh sh;
+    AdbConn conn = null;
+    if (mock) sh = new MockSh(R);
+    else {
+      String[] hp = Scan.parseAddr(adb);
+      AdbKey k = keyFile == null ? AdbKey.loadOrCreate(new File(System.getProperty("java.io.tmpdir"), "carkit_test_adbkey")) : AdbKey.loadOrCreate(new File(keyFile));
+      conn = AdbConn.connect(hp[0], Integer.parseInt(hp[1]), k, 15, new AdbConn.AuthListener() {
+        public void onAllowNeeded() { System.out.println("ALLOW? (на экране магнитолы)"); }
+      });
+      System.out.println("CONNECTED " + conn.banner + " maxdata=" + conn.maxData());
+      sh = conn;
+    }
+    Engine e = new Engine(sh, d, L, new Engine.Log() {
+      public void line(String t, int kind) { System.out.println((kind == Engine.OK ? "OK   " : kind == Engine.WARN ? "WARN " : kind == Engine.BAD ? "BAD  " : "     ") + t); }
+      public void progress(int done, int total) { System.out.println("PROGRESS " + done + "/" + total); }
+    });
+    e.dnsWaitSec = 0;
+    e.settleMs = 0;
+    e.diagnose();
+    System.out.println("PLATFORM " + e.platId + " | " + e.platName + " | " + e.chip + " | core=" + e.core + " | unit=" + e.unitId);
+    for (String o : e.obs) System.out.println("OBS " + o);
+    for (String n : e.notes) System.out.println("NOTE " + n);
+    for (Engine.Item it : e.items) System.out.println("ITEM [" + (it.on ? "x" : " ") + "] " + it.kind + " " + it.pkg + " | " + it.group + " | " + it.text);
+    File jf = new File(journal != null ? journal : new File(System.getProperty("java.io.tmpdir"), "carkit_test_journal.tsv").getPath());
+    if (mode.equals("apply") || mode.equals("both")) {
+      List<String> ks = Arrays.asList(kinds.split(","));
+      List<Engine.Item> sel = new ArrayList<Engine.Item>();
+      for (Engine.Item it : e.items) if (it.on && ks.contains(it.kind)) sel.add(it);
+      Engine.Journal j = e.apply(sel, jf.isFile() ? Engine.Journal.load(jf) : new Engine.Journal(jf));
+      System.out.println("APPLIED " + j.entries.size());
+      for (Engine.Entry x : j.entries) System.out.println("JOURNAL " + e.describe(x));
+    }
+    if (mode.equals("rollback") || mode.equals("both")) {
+      Engine.Journal j = Engine.Journal.load(jf);
+      System.out.println("ROLLBACK FROM " + j.entries.size());
+      e.rollback(j, null);
+      System.out.println("ROLLED BACK, LEFT " + Engine.Journal.load(jf).entries.size());
+    }
+    System.out.println("REPORT-BEGIN");
+    System.out.print(e.reportText(jf.isFile() ? Engine.Journal.load(jf) : null));
+    System.out.println("REPORT-END");
+    if (conn != null) conn.close();
+  }
+
+  /** Подставная магнитола: python3 tests/mock_adb.py -s ADDR shell <команда>. */
+  static final class MockSh implements Sh {
+    final String root;
+    MockSh(String root) throws IOException {
+      this.root = root;
+      run("connect", "192.168.43.120:5555");
+    }
+    String run(String... args) throws IOException {
+      List<String> c = new ArrayList<String>();
+      c.add("python3"); c.add(new File(root, "tests/mock_adb.py").getPath());
+      c.addAll(Arrays.asList(args));
+      Process p = new ProcessBuilder(c).redirectErrorStream(true).start();
+      String o = new String(AdbKey.readAll(p.getInputStream()), "UTF-8");
+      try { p.waitFor(); } catch (InterruptedException ignored) {}
+      return o;
+    }
+    public String sh(String cmd, int timeoutSec) throws IOException {
+      String serial = System.getenv("MOCK_USB") != null ? "USB123" : "192.168.43.120:5555";
+      return run("-s", serial, "shell", cmd).replace("\r", "");
+    }
+  }
+}

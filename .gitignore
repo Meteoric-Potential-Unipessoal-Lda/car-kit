@@ -8,3 +8,4 @@ tests/mockstate.json
 apk/*.apk
 !apk/car-launcher.apk
 launcher/build/
+mobile/build/

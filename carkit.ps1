@@ -50,7 +50,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$KitVersion = '0.3'
+$KitVersion = '0.4'
 $KitName = 'car-kit'
 $KitRepo = 'Meteoric-Potential-Unipessoal-Lda/car-kit'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
@@ -1307,7 +1307,8 @@ function Add-Journal($entry) { [void]$script:Journal.Add($entry); Save-State }
 
 function Disable-Pkg([string]$pkg, [switch]$Third) {
   # Последняя проверка безопасности прямо перед командой
-  if ($script:keepSet.Contains($pkg)) { OptLog (L 'm123' $pkg) 'warn'; return $false }
+  $ks = $(if ($Third) { $script:roleKeep } else { $script:keepSet })
+  if ($ks -and $ks.Contains($pkg)) { OptLog (L 'm123' $pkg) 'warn'; return $false }
   if (-not $Third) {
     if (Test-Protected $pkg) { OptLog (L 'm124' $pkg) 'warn'; return $false }
     if ($script:third.Contains($pkg)) { OptLog (L 'm125' $pkg) 'warn'; return $false }
@@ -2159,7 +2160,7 @@ $dataPct = 0; if ($dataTotal -gt 0) { $dataPct = [math]::Round(100 * $dataUsed /
 $dsTxt = Sh 'dumpsys diskstats' 60
 $cacheMb = 0; $bigApps = @()
 function Get-JsonArr([string]$name) { if ($dsTxt -match ('(?m)^' + [regex]::Escape($name) + ': \[(.*)\]')) { return @($Matches[1] -split ',' | ForEach-Object { $_.Trim().Trim('"') }) } return @() }
-$dsNames = Get-JsonArr 'App Package Names'; $dsApp = Get-JsonArr 'App Sizes'; $dsData = Get-JsonArr 'App Data Sizes'; $dsCache = Get-JsonArr 'Cache Sizes'
+$dsNames = @(Get-JsonArr 'App Package Names'); $dsApp = @(Get-JsonArr 'App Sizes'); $dsData = @(Get-JsonArr 'App Data Sizes'); $dsCache = @(Get-JsonArr 'Cache Sizes')
 if ($dsNames.Count -gt 0 -and $dsCache.Count -eq $dsNames.Count) {
   $sumC = [int64]0
   for ($i = 0; $i -lt $dsNames.Count; $i++) {
@@ -2382,7 +2383,9 @@ foreach ($x in @($homePkg, $imePkg)) { if ($x -and $x -ne 'null') { [void]$roleS
 $keepSet = New-Object 'System.Collections.Generic.HashSet[string]'
 foreach ($x in $roleSet) { [void]$keepSet.Add($x) }
 foreach ($x in @($a11yPkgs + $nlsPkgs + $adminPkgs)) { [void]$keepSet.Add($x) }
-$script:keepSet = $roleSet   # для Disable-Pkg -Third (подозрительные сторонние) проверяем только роли
+# для Disable-Pkg -Third (подозрительные сторонние) проверяем только роли; отдельная переменная — в области скрипта
+# $script:keepSet и $keepSet одно и то же, присваивание затёрло бы спецвозможности / уведомления / администраторов
+$script:roleKeep = $roleSet
 $kids = ($all.Contains('com.google.android.apps.kids.familylinkhelper') -or $roles.ContainsKey('android.app.role.SYSTEM_SUPERVISION') -or ($dpTxt -match '(?i)supervision|kids') -or $all.Contains('com.sec.android.app.kidshome'))
 $launchOk = ($launchable.Count -ge 5)
 

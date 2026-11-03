@@ -1,6 +1,6 @@
 # car-kit
 
-**Download:** [latest release](https://github.com/Meteoric-Potential-Unipessoal-Lda/car-kit/releases/latest) · Windows: unzip → `prepare.bat` → `start.bat` · Mac: `bash start.command` · **Testers:** see [TESTING.md](TESTING.md)
+**Download:** [latest release](https://github.com/Meteoric-Potential-Unipessoal-Lda/car-kit/releases/latest) · Windows: unzip → `prepare.bat` → `start.bat` · Mac: `bash start.command` · **Android phone:** `car-kit-mobile-X.Y.apk` from the same release ([mobile/](mobile/README.md)) · **Testers:** see [TESTING.md](TESTING.md)
 
 **EN** · A repair technician's tool that safely checks, cleans up and speeds up **Android car head units** over ADB: FYT / UIS7862 / UIS8581 / UIS7870 (Teyes, Joying, Mekede, Hizpo), QF, Topway TS10 / TS18, Rockchip PX5 / PX6 MTCD / MTCE (Dasaita, Pumpkin, Xtrons, Eonon), cheap MediaTek (Reglink, HCN), Allwinner T3 / T5 / T8, ATOTO and other Android units. Runs on Windows or Mac and opens a local page in the browser (works offline). The head unit is found on the Wi-Fi network automatically (ADB port 5555), or connected by IP, by pairing code (Android 11+) or by USB.
 
@@ -22,6 +22,7 @@ Based on [phone-kit](https://github.com/Meteoric-Potential-Unipessoal-Lda/phone-
 - **Settings snapshot** (read-only) — all Android settings, platform properties, FYT `/oem/app/config.txt` (car model, CAN), to restore by hand after a reset or flashing.
 - **Extra checks** — wrong clock (breaks HTTPS), auto time off, location off, weak Wi-Fi to the hotspot.
 - **car-launcher** — our own lightweight home screen for head units (`launcher/`, plain Java, no Gradle; built and signed by GitHub Actions, shipped as `apk/car-launcher.apk`): Navigation / Music / Phone / Radio / All apps tiles, 6 favorites, clock, auto-start of navigation or music after power-on and after sleep. The kit can make it (or Agama, CarWebGuru…) the home screen, presses Home to verify and rolls back if the firmware intercepts the button; the stock launcher is never disabled.
+- **car-kit Mobile (Android app)** — no laptop needed: install `car-kit-mobile-X.Y.apk` on the phone, share Wi-Fi from it, connect the head unit — the app finds the unit, runs the same diagnostics and the same safe plan (identical protection rules, checked by tests), applies in batches with core-service checks and rolls back from a log kept on the phone. See [mobile/README.md](mobile/README.md).
 - **Your own APKs** — put `.apk` files into `apk/`; the plan offers to install them (unchecked), rollback removes what the kit installed.
 - **Help for enabling ADB** — developer options, network ADB, common factory-menu passwords (shown, never guessed), `adb tcpip 5555`, Android 11+ pairing.
 - **Reboot check** — finds the unit again on the network after reboot (address may change), warns when network ADB is not persistent.
@@ -37,7 +38,7 @@ Based on [phone-kit](https://github.com/Meteoric-Potential-Unipessoal-Lda/phone-
 
 ## Tests
 
-`bash tests/run.sh` — scenarios on a mock adb; `tests/emu.sh` — the kit and car-launcher on a real Android 11 emulator in CI; (`tests/mock_adb.py`) for FYT, Teyes, Topway TS, MTCE, Reglink, Android Automotive and an unknown unit; `tests/webtest.py` — the browser interface; GitHub Actions also parse the script in Windows PowerShell 5.1.
+`bash tests/run.sh` — scenarios on a mock adb; `bash tests/mobile/run.sh` — the phone app's logic, ADB protocol (fake adbd) and plan parity with the laptop kit; `tests/emu.sh` — the kit and car-launcher on a real Android 11 emulator in CI; (`tests/mock_adb.py`) for FYT, Teyes, Topway TS, MTCE, Reglink, Android Automotive and an unknown unit; `tests/webtest.py` — the browser interface; GitHub Actions also parse the script in Windows PowerShell 5.1.
 
 ## License
 
