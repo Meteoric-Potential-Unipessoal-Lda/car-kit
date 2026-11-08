@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
   synchronized AdbKey ensureKey() {
     if (key == null) {
       try { key = AdbKey.loadOrCreate(new File(getFilesDir(), "adbkey")); }
-      catch (Exception e) { postMsg(L.t("a015", e.toString()), BAD); }
+      catch (Exception e) { android.util.Log.e("CARKIT", "key: " + e, e); postMsg(L.t("a015", e.toString()), BAD); }
     }
     return key;
   }
@@ -596,6 +596,7 @@ public class MainActivity extends Activity {
       public void run() {
         try {
           AdbKey k = ensureKey();
+          if (k == null) { alog("AUTOTEST FAIL no key"); return; }
           if (what.equals("key")) {
             File d = getExternalFilesDir(null);
             FileOutputStream o = new FileOutputStream(new File(d, "adbkey.pub"));

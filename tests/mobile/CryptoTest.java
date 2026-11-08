@@ -43,6 +43,10 @@ public final class CryptoTest {
     check(!Arrays.equals(al.process(mb), bo.process(ma)), "неверный код -> разные ключи");
     byte[] bad = new byte[32]; Arrays.fill(bad, (byte) 0xff);
     check(Spake2.client().process(bad) == null, "не точка кривой -> отказ");
+    java.security.KeyPairGenerator g = java.security.KeyPairGenerator.getInstance("RSA"); g.initialize(2048);
+    java.security.interfaces.RSAPrivateCrtKey kk = (java.security.interfaces.RSAPrivateCrtKey) g.generateKeyPair().getPrivate();
+    java.security.spec.RSAPrivateCrtKeySpec cs = AdbKey.crtSpec(kk.getEncoded());
+    check(cs.getModulus().equals(kk.getModulus()) && cs.getPrivateExponent().equals(kk.getPrivateExponent()) && cs.getCrtCoefficient().equals(kk.getCrtCoefficient()), "разбор PKCS#8 ключа RSA (CRT)");
     long t = System.currentTimeMillis();
     Spake2 x = Spake2.client(); x.generate(pw, null); x.process(Spake2.server().generate(pw, null));
     System.out.println("SPAKE2 time ms: " + (System.currentTimeMillis() - t));

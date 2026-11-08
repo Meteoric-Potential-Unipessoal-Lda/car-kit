@@ -36,11 +36,13 @@ public final class AdbKey {
     g.initialize(2048);
     KeyPair kp = g.generateKeyPair();
     byte[] der = kp.getPrivate().getEncoded();
+    AdbKey made = kp.getPrivate() instanceof RSAPrivateCrtKey ? new AdbKey((RSAPrivateCrtKey) kp.getPrivate())
+      : new AdbKey((RSAPrivateCrtKey) KeyFactory.getInstance("RSA").generatePrivate(crtSpec(der)));
     File tmp = new File(f.getPath() + ".tmp");
     FileOutputStream o = new FileOutputStream(tmp);
     try { o.write(pem(der).getBytes("US-ASCII")); } finally { o.close(); }
     if (!tmp.renameTo(f)) throw new IOException("cannot save " + f);
-    return new AdbKey((RSAPrivateCrtKey) kp.getPrivate());
+    return made;
   }
 
   public static AdbKey load(File f) throws IOException, GeneralSecurityException {
@@ -51,7 +53,47 @@ public final class AdbKey {
       if (s.contains("BEGIN RSA PRIVATE KEY")) throw new GeneralSecurityException("PKCS#1 key is not supported, use PKCS#8");
       der = B64.decode(s.replaceAll("-----[^-]+-----", "").replaceAll("\\s", ""));
     }
-    return new AdbKey((RSAPrivateCrtKey) KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(der)));
+    java.security.PrivateKey pk = null;
+    try { pk = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(der)); } catch (GeneralSecurityException ignored) {}
+    if (pk instanceof RSAPrivateCrtKey) return new AdbKey((RSAPrivateCrtKey) pk);
+    // некоторые провайдеры Android отдают ключ без CRT-параметров — разбираем PKCS#8 сами
+    return new AdbKey((RSAPrivateCrtKey) KeyFactory.getInstance("RSA").generatePrivate(crtSpec(der)));
+  }
+
+  /** PKCS#8 PrivateKeyInfo { 0, AlgId, OCTET STRING { RSAPrivateKey { 0, n, e, d, p, q, dp, dq, qinv } } }. */
+  static java.security.spec.RSAPrivateCrtKeySpec crtSpec(byte[] der) throws GeneralSecurityException {
+    int[] pos = { 0 };
+    enter(der, pos, 0x30);
+    skip(der, pos);                     // version
+    skip(der, pos);                     // AlgorithmIdentifier
+    enter(der, pos, 0x04);
+    enter(der, pos, 0x30);
+    skip(der, pos);                     // version
+    BigInteger[] v = new BigInteger[8];
+    for (int i = 0; i < 8; i++) v[i] = integer(der, pos);
+    return new java.security.spec.RSAPrivateCrtKeySpec(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
+  }
+
+  private static int len(byte[] d, int[] p) throws GeneralSecurityException {
+    int b = d[p[0]++] & 0xff;
+    if (b < 0x80) return b;
+    int n = b & 0x7f, r = 0;
+    if (n > 4) throw new GeneralSecurityException("DER length");
+    for (int i = 0; i < n; i++) r = (r << 8) | (d[p[0]++] & 0xff);
+    return r;
+  }
+  private static void enter(byte[] d, int[] p, int tag) throws GeneralSecurityException {
+    if ((d[p[0]++] & 0xff) != tag) throw new GeneralSecurityException("DER tag " + tag);
+    len(d, p);
+  }
+  private static void skip(byte[] d, int[] p) throws GeneralSecurityException { p[0]++; int l = len(d, p); p[0] += l; }
+  private static BigInteger integer(byte[] d, int[] p) throws GeneralSecurityException {
+    if ((d[p[0]++] & 0xff) != 0x02) throw new GeneralSecurityException("DER integer");
+    int l = len(d, p);
+    byte[] b = new byte[l];
+    System.arraycopy(d, p[0], b, 0, l);
+    p[0] += l;
+    return new BigInteger(b);
   }
 
   static String pem(byte[] der) {

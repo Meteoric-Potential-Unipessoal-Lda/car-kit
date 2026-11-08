@@ -160,14 +160,16 @@ PY
 )"
       echo "pairing code: [$CODE] address: [$PADDR]"
       if [ -n "$CODE" ] && [ -n "$PADDR" ]; then
-        adb logcat -c
-        adb shell am force-stop net.zherdyev.carkit
-        adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest 127.0.0.1:$TP --es pair "$PADDR" --es code "$CODE" --es kinds anim > /dev/null
-        sleep 45
-        adb logcat -d -s CARKIT:I > "$LOGS/m_app_pair.log" 2>&1
-        adb logcat -d | grep -iE 'carkit|AndroidRuntime|conscrypt|DEBUG  :|adbd|pairing' | tail -80 > "$LOGS/m_app_pair_full.log" 2>&1
-        expect m_app_pair 'AUTOTEST PAIRED'
-        expect m_app_pair 'AUTOTEST OK'
+        # сопрягаемся с ноутбука через adb forward: окно с кодом должно оставаться на экране
+        # (приложение в том же эмуляторе закрыло бы его — на настоящей магнитоле телефон отдельно, окно не закрывается)
+        adb forward tcp:7103 tcp:${PADDR##*:} > /dev/null
+        adb forward tcp:7102 tcp:$TP > /dev/null
+        java -cp "$CLS:$CJ" net.zherdyev.carkit.Cli --root "$ROOT" --pair 127.0.0.1:7103 --code "$CODE" --tls conscrypt --key "$LOGS/paired_adbkey" --adb 127.0.0.1:7102 --mode diag > "$LOGS/m_pair_real.log" 2>&1
+        expect m_pair_real 'PAIRED guid=adb-'
+        expect m_pair_real 'tls=true'
+        reject m_pair_real 'Exception'
+        adb shell ls /data/misc/adb/ > "$LOGS/adb_dir.txt" 2>&1
+        adb forward --remove-all > /dev/null 2>&1
       else echo "SKIP сопряжение с настоящим adbd: код не прочитан с экрана"; fi
     else echo "SKIP сопряжение с настоящим adbd: нет кнопки «Pair device with pairing code»"; fi
     adb shell input keyevent 4; adb shell input keyevent 3
