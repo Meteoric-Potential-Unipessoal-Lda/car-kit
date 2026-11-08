@@ -69,6 +69,7 @@ public final class ConscryptTls implements Tls {
 
   public Socket client(Socket raw, String host, int port, AdbKey key) throws IOException {
     SSLSocket s = (SSLSocket) context(key).getSocketFactory().createSocket(raw, host, port, true);
+    s.setSoTimeout(15000);   // рукопожатие не должно висеть, если магнитола молчит
     s.setUseClientMode(true);
     s.setEnabledProtocols(new String[] { "TLSv1.3" });
     s.startHandshake();

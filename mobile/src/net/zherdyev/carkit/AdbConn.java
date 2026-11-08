@@ -70,7 +70,10 @@ public final class AdbConn implements Sh, Closeable {
     while (true) {
       Msg m;
       try { m = read(); }
-      catch (SocketTimeoutException e) { if (sentPub) throw new NotAllowed(); throw e; }
+      catch (SocketTimeoutException e) { if (sentPub) throw new NotAllowed(); if (tls) throw new NotPaired("timeout"); throw e; }
+      // TLS 1.3: о непринятом сертификате клиент узнаёт уже после рукопожатия — при первом чтении
+      catch (javax.net.ssl.SSLException e) { if (tls) throw new NotPaired(e.getMessage()); throw e; }
+      catch (java.io.EOFException e) { if (tls) throw new NotPaired("closed"); throw e; }
       if (m.cmd == STLS) {
         if (tlsImpl == null || tls) throw new TlsRequired();
         send(STLS, STLS_VERSION, 0, null);

@@ -602,6 +602,8 @@ public class MainActivity extends Activity {
             o.write((k.adbPublicKey("car-kit@phone") + "\n").getBytes("UTF-8"));
             o.close();
             alog("AUTOTEST KEY " + k.fingerprint());
+            // Android 11 не даёт adb читать Android/data — ключ для CI отдаём через logcat
+            alog("AUTOTEST PUB " + k.adbPublicKey("car-kit@phone"));
             return;
           }
           if (delay > 0) Thread.sleep(delay * 1000L);

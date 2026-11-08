@@ -74,8 +74,9 @@ if [ -n "$MAPK" ]; then
   expect m_install 'Success'
   adb logcat -c
   adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest key > /dev/null
-  for i in $(seq 1 30); do adb shell ls /sdcard/Android/data/net.zherdyev.carkit/files/adbkey.pub >/dev/null 2>&1 && break; sleep 1; done
-  adb pull /sdcard/Android/data/net.zherdyev.carkit/files/adbkey.pub "$LOGS/app_adbkey.pub" > /dev/null 2>&1
+  for i in $(seq 1 30); do adb logcat -d -s CARKIT:I | grep -q 'AUTOTEST PUB ' && break; sleep 1; done
+  adb logcat -d -s CARKIT:I | sed -n 's/.*AUTOTEST PUB //p' | tr -d '\r' | head -1 > "$LOGS/app_adbkey.pub"
+  [ -s "$LOGS/app_adbkey.pub" ] && echo "PASS m_key: ключ приложения получен" || { echo "FAIL m_key: нет ключа приложения"; FAIL=1; }
   adb root > /dev/null; sleep 3; adb wait-for-device
   adb push "$LOGS/app_adbkey.pub" /data/local/tmp/app.pub > /dev/null
   adb shell 'cat /data/local/tmp/app.pub >> /data/misc/adb/adb_keys; chmod 640 /data/misc/adb/adb_keys; chown system:shell /data/misc/adb/adb_keys' || true
@@ -129,6 +130,7 @@ PY
     adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest 127.0.0.1:$TP --es kinds anim --ei delay 2 > /dev/null
     sleep 45
     adb logcat -d -s CARKIT:I > "$LOGS/m_app_tls.log" 2>&1
+    adb logcat -d | grep -iE 'carkit|AndroidRuntime|conscrypt|DEBUG  :|adbd' | tail -80 > "$LOGS/m_app_tls_full.log" 2>&1
     expect m_app_tls 'AUTOTEST TLS true'
     expect m_app_tls 'AUTOTEST OK'
     # сопряжение по коду с настоящим adbd: открыть «Беспроводная отладка» -> «Подключение по коду», прочитать код и порт с экрана
@@ -159,9 +161,11 @@ PY
       echo "pairing code: [$CODE] address: [$PADDR]"
       if [ -n "$CODE" ] && [ -n "$PADDR" ]; then
         adb logcat -c
+        adb shell am force-stop net.zherdyev.carkit
         adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest 127.0.0.1:$TP --es pair "$PADDR" --es code "$CODE" --es kinds anim > /dev/null
         sleep 45
         adb logcat -d -s CARKIT:I > "$LOGS/m_app_pair.log" 2>&1
+        adb logcat -d | grep -iE 'carkit|AndroidRuntime|conscrypt|DEBUG  :|adbd|pairing' | tail -80 > "$LOGS/m_app_pair_full.log" 2>&1
         expect m_app_pair 'AUTOTEST PAIRED'
         expect m_app_pair 'AUTOTEST OK'
       else echo "SKIP сопряжение с настоящим adbd: код не прочитан с экрана"; fi
