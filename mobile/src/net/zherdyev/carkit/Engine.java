@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * с проверкой служб магнитолы и откат по журналу. Без android.* — тестируется на обычной Java (tests/mobile).
  */
 public final class Engine {
-  public static final String VERSION = "0.4";
+  public static final String VERSION = "0.5";
   public static final int INFO = 0, OK = 1, WARN = 2, BAD = 3;
 
   public interface Log {

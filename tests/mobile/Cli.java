@@ -13,12 +13,14 @@ import java.util.List;
  *   --mock                   магнитола = tests/mock_adb.py (MOCK_BRAND и др. из окружения)
  *   --adb HOST:PORT --key F  настоящий протокол ADB (fake_adbd.py или эмулятор), ключ adbkey (PKCS#8)
  *   --mode diag|apply|rollback|both   --kinds anim,disable   --lang ru   --journal файл
+ *   --pair HOST:PORT --code 123456   сопряжение «по коду» (Android 11+) перед подключением; --tls conscrypt|plain|jdk
+ *   --dump-cert файл                  записать сертификат ключа (PEM) — для подставного TLS-порта
  */
 public final class Cli {
   public static void main(String[] a) throws Exception {
     System.setOut(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8"));
     String root = new File(".").getCanonicalPath();
-    String mode = "diag", kinds = "anim,disable", lang = "ru", adb = null, keyFile = null, journal = null;
+    String mode = "diag", kinds = "anim,disable", lang = "ru", adb = null, keyFile = null, journal = null, pair = null, code = null, tlsName = null, dumpCert = null;
     boolean mock = false;
     for (int i = 0; i < a.length; i++) {
       if (a[i].equals("--mock")) mock = true;
@@ -29,6 +31,10 @@ public final class Cli {
       else if (a[i].equals("--lang")) lang = a[++i];
       else if (a[i].equals("--journal")) journal = a[++i];
       else if (a[i].equals("--root")) root = a[++i];
+      else if (a[i].equals("--pair")) pair = a[++i];
+      else if (a[i].equals("--code")) code = a[++i];
+      else if (a[i].equals("--tls")) tlsName = a[++i];
+      else if (a[i].equals("--dump-cert")) dumpCert = a[++i];
     }
     final String R = root;
     Lang.Source src = new Lang.Source() {
@@ -41,14 +47,31 @@ public final class Cli {
     Data d = new Data(src, lang);
     Sh sh;
     AdbConn conn = null;
+    AdbKey k = keyFile == null ? AdbKey.loadOrCreate(new File(System.getProperty("java.io.tmpdir"), "carkit_test_adbkey")) : AdbKey.loadOrCreate(new File(keyFile));
+    if (dumpCert != null) {
+      java.io.FileOutputStream o = new java.io.FileOutputStream(dumpCert);
+      String b = B64.encode(k.certificate().getEncoded());
+      StringBuilder pem = new StringBuilder("-----BEGIN CERTIFICATE-----\n");
+      for (int i = 0; i < b.length(); i += 64) pem.append(b, i, Math.min(b.length(), i + 64)).append('\n');
+      o.write(pem.append("-----END CERTIFICATE-----\n").toString().getBytes("US-ASCII"));
+      o.close();
+      System.out.println("CERT " + dumpCert + " " + k.certificate().getSubjectX500Principal());
+      if (adb == null && pair == null) return;
+    }
+    Tls tls = tlsName == null ? null : TestTls.pick(tlsName);
+    if (pair != null) {
+      String[] pp = Scan.parseAddr(pair);
+      String guid = AdbPair.pair(pp[0], Integer.parseInt(pp[1]), code, k, tls == null ? TestTls.pick("conscrypt") : tls);
+      System.out.println("PAIRED guid=" + guid);
+      if (adb == null) return;
+    }
     if (mock) sh = new MockSh(R);
     else {
       String[] hp = Scan.parseAddr(adb);
-      AdbKey k = keyFile == null ? AdbKey.loadOrCreate(new File(System.getProperty("java.io.tmpdir"), "carkit_test_adbkey")) : AdbKey.loadOrCreate(new File(keyFile));
       conn = AdbConn.connect(hp[0], Integer.parseInt(hp[1]), k, 15, new AdbConn.AuthListener() {
         public void onAllowNeeded() { System.out.println("ALLOW? (на экране магнитолы)"); }
-      });
-      System.out.println("CONNECTED " + conn.banner + " maxdata=" + conn.maxData());
+      }, tls);
+      System.out.println("CONNECTED " + conn.banner + " maxdata=" + conn.maxData() + " tls=" + conn.tls);
       sh = conn;
     }
     Engine e = new Engine(sh, d, L, new Engine.Log() {

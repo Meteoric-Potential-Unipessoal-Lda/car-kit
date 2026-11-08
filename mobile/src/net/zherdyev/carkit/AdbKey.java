@@ -120,6 +120,77 @@ public final class AdbKey {
     } catch (GeneralSecurityException e) { return "?"; }
   }
 
+  private java.security.cert.X509Certificate cert;
+
+  /**
+   * Самоподписанный сертификат нашего ключа для TLS беспроводной отладки — как у adb (crypto/x509_generator.cpp):
+   * v3, серийный 1, C=US, O=Android, CN=Adb, basicConstraints CA:TRUE, keyUsage, SHA256withRSA.
+   */
+  public synchronized java.security.cert.X509Certificate certificate() throws IOException {
+    if (cert != null) return cert;
+    try {
+      byte[] alg = seq(oid(new int[] { 1, 2, 840, 113549, 1, 1, 11 }), new byte[] { 0x05, 0x00 });
+      byte[] name = seq(set(seq(oid(new int[] { 2, 5, 4, 6 }), str(0x13, "US"))),
+                        set(seq(oid(new int[] { 2, 5, 4, 10 }), str(0x0c, "Android"))),
+                        set(seq(oid(new int[] { 2, 5, 4, 3 }), str(0x0c, "Adb"))));
+      // постоянный срок (2020–2049): сертификат одного ключа всегда одинаковый байт в байт
+      byte[] validity = seq(str(0x17, "200101000000Z"), str(0x17, "491231235959Z"));
+      byte[] bc = seq(oid(new int[] { 2, 5, 29, 19 }), new byte[] { 0x01, 0x01, (byte) 0xff }, tlv(0x04, seq(new byte[] { 0x01, 0x01, (byte) 0xff })));
+      byte[] ku = seq(oid(new int[] { 2, 5, 29, 15 }), new byte[] { 0x01, 0x01, (byte) 0xff }, tlv(0x04, new byte[] { 0x03, 0x02, 0x01, (byte) 0x86 }));
+      byte[] tbs = seq(tlv(0xa0, new byte[] { 0x02, 0x01, 0x02 }), new byte[] { 0x02, 0x01, 0x01 }, alg, name, validity, name,
+                       pub.getEncoded(), tlv(0xa3, seq(bc, ku)));
+      java.security.Signature s = java.security.Signature.getInstance("SHA256withRSA");
+      s.initSign(priv);
+      s.update(tbs);
+      byte[] sig = s.sign();
+      byte[] bits = new byte[sig.length + 1];
+      System.arraycopy(sig, 0, bits, 1, sig.length);
+      byte[] der = seq(tbs, alg, tlv(0x03, bits));
+      cert = (java.security.cert.X509Certificate) java.security.cert.CertificateFactory.getInstance("X.509")
+        .generateCertificate(new java.io.ByteArrayInputStream(der));
+      return cert;
+    } catch (GeneralSecurityException e) { throw new IOException("certificate: " + e, e); }
+  }
+
+  static byte[] tlv(int tag, byte[] v) {
+    ByteArrayOutputStream o = new ByteArrayOutputStream();
+    o.write(tag);
+    int n = v.length;
+    if (n < 128) o.write(n);
+    else if (n < 256) { o.write(0x81); o.write(n); }
+    else if (n < 65536) { o.write(0x82); o.write(n >> 8); o.write(n & 0xff); }
+    else { o.write(0x83); o.write(n >> 16); o.write((n >> 8) & 0xff); o.write(n & 0xff); }
+    o.write(v, 0, v.length);
+    return o.toByteArray();
+  }
+
+  static byte[] seq(byte[]... parts) { return tlv(0x30, cat(parts)); }
+  static byte[] set(byte[]... parts) { return tlv(0x31, cat(parts)); }
+
+  static byte[] cat(byte[]... parts) {
+    ByteArrayOutputStream o = new ByteArrayOutputStream();
+    for (byte[] p : parts) o.write(p, 0, p.length);
+    return o.toByteArray();
+  }
+
+  static byte[] str(int tag, String s) {
+    try { return tlv(tag, s.getBytes("UTF-8")); } catch (java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
+  }
+
+  static byte[] oid(int[] a) {
+    ByteArrayOutputStream o = new ByteArrayOutputStream();
+    o.write(a[0] * 40 + a[1]);
+    for (int i = 2; i < a.length; i++) {
+      int v = a[i];
+      byte[] tmp = new byte[5];
+      int n = 0;
+      do { tmp[n++] = (byte) (v & 0x7f); v >>>= 7; } while (v != 0);
+      for (int j = n - 1; j >= 0; j--) o.write(tmp[j] | (j > 0 ? 0x80 : 0));
+    }
+    return tlv(0x06, o.toByteArray());
+  }
+
+
   static byte[] readAll(InputStream in) throws IOException {
     try {
       ByteArrayOutputStream o = new ByteArrayOutputStream();

@@ -14,7 +14,8 @@ import java.nio.ByteOrder;
 
 /**
  * Клиент протокола ADB по TCP (как «adb connect IP:5555»): CNXN, AUTH (ключ RSA телефона), OPEN shell:.
- * Беспроводная отладка Android 11+ (TLS после сопряжения) не поддерживается — нужен обычный порт 5555.
+ * Порт беспроводной отладки Android 11+ отвечает STLS — тогда, если передан Tls, переходим на TLS 1.3 с сертификатом
+ * нашего ключа (ключ должен быть заранее сопряжён по коду — AdbPair).
  */
 public final class AdbConn implements Sh, Closeable {
   static final int CNXN = 0x4e584e43, AUTH = 0x48545541, OPEN = 0x4e45504f, OKAY = 0x59414b4f, CLSE = 0x45534c43, WRTE = 0x45545257, STLS = 0x534c5453;
@@ -27,10 +28,14 @@ public final class AdbConn implements Sh, Closeable {
   public static final class TlsRequired extends IOException { TlsRequired() { super("TLS"); } }
   /** Ключ не приняли: на экране магнитолы не нажали «Разрешить». */
   public static final class NotAllowed extends IOException { NotAllowed() { super("not allowed"); } }
+  /** TLS-порт не принял наш ключ: телефон не сопряжён с магнитолой (сначала код сопряжения). */
+  public static final class NotPaired extends IOException { NotPaired(String m) { super("not paired: " + m); } }
+  static final int STLS_VERSION = 0x01000000;
 
-  private final Socket sock;
-  private final DataInputStream in;
-  private final OutputStream out;
+  private Socket sock;
+  private DataInputStream in;
+  private OutputStream out;
+  public boolean tls = false;
   private int maxData = 4096;
   private int nextId = 1;
   public String banner = "";
@@ -44,17 +49,21 @@ public final class AdbConn implements Sh, Closeable {
   }
 
   public static AdbConn connect(String host, int port, AdbKey key, int allowWaitSec, AuthListener l) throws IOException {
+    return connect(host, port, key, allowWaitSec, l, null);
+  }
+
+  public static AdbConn connect(String host, int port, AdbKey key, int allowWaitSec, AuthListener l, Tls tls) throws IOException {
     Socket s = new Socket();
     s.setTcpNoDelay(true);
     s.connect(new InetSocketAddress(host, port), 5000);
     AdbConn c = new AdbConn(s, host + ":" + port);
     try {
-      c.handshake(key, allowWaitSec, l);
+      c.handshake(host, port, key, allowWaitSec, l, tls);
       return c;
     } catch (IOException e) { c.close(); throw e; }
   }
 
-  private void handshake(AdbKey key, int allowWaitSec, AuthListener l) throws IOException {
+  private void handshake(String host, int port, AdbKey key, int allowWaitSec, AuthListener l, Tls tlsImpl) throws IOException {
     sock.setSoTimeout(10000);
     send(CNXN, VERSION, MAXDATA, "host::car-kit\0".getBytes("UTF-8"));
     boolean sentSig = false, sentPub = false;
@@ -62,7 +71,21 @@ public final class AdbConn implements Sh, Closeable {
       Msg m;
       try { m = read(); }
       catch (SocketTimeoutException e) { if (sentPub) throw new NotAllowed(); throw e; }
-      if (m.cmd == STLS) throw new TlsRequired();
+      if (m.cmd == STLS) {
+        if (tlsImpl == null || tls) throw new TlsRequired();
+        send(STLS, STLS_VERSION, 0, null);
+        Socket t;
+        try { t = tlsImpl.client(sock, host, port, key); }
+        catch (javax.net.ssl.SSLException e) { throw new NotPaired(e.getMessage()); }
+        catch (java.net.SocketException e) { throw new NotPaired(e.getMessage()); }
+        catch (java.io.EOFException e) { throw new NotPaired("closed"); }
+        sock = t;
+        in = new DataInputStream(new java.io.BufferedInputStream(t.getInputStream(), 65536));
+        out = t.getOutputStream();
+        tls = true;
+        sock.setSoTimeout(15000);
+        continue;
+      }
       if (m.cmd == CNXN) {
         maxData = Math.max(1024, Math.min(m.arg1, MAXDATA));
         banner = new String(m.data, "UTF-8").replace("\0", "");

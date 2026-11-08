@@ -146,12 +146,13 @@ public class MainActivity extends Activity {
     ip.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
     page.addView(ip, lp(-1, -2, 12));
     button(L.t("a004"), false, new View.OnClickListener() { public void onClick(View v) { connect(ip.getText().toString()); } });
+    button(L.t("a200"), false, new View.OnClickListener() { public void onClick(View v) { showWireless(null); } });
     button(L.t("a005"), false, new View.OnClickListener() { public void onClick(View v) { showHelp(); } });
     space(12);
     langPicker();
     AdbKey k = key;
     if (k != null) text(L.t("a007", k.fingerprint()), MUTED, 12);
-    text("car-kit Mobile " + Engine.VERSION + " · GPL-3.0 · github.com/Meteoric-Potential-Unipessoal-Lda/car-kit", MUTED, 11);
+    text("car-kit Mobile " + Engine.VERSION + " · GPL-3.0 · github.com/Meteoric-Potential-Unipessoal-Lda/car-kit · TLS: Conscrypt (Apache-2.0)", MUTED, 11);
   }
 
   void langPicker() {
@@ -225,10 +226,14 @@ public class MainActivity extends Activity {
 
   // ---------------------------------------------------------------- подключение и диагностика
 
-  void connect(String addr) {
+  void connect(String addr) { connect(addr, null, null); }
+
+  /** Подключение; pairAddr + code — сначала сопряжение «по коду» (Android 11+). */
+  void connect(String addr, final String pairAddr, final String code) {
     if (busy) return;
     final String[] hp = Scan.parseAddr(addr);
     if (hp == null) { showHome(L.t("a015", addr)); return; }
+    final String[] pp = pairAddr == null ? null : Scan.parseAddr(pairAddr);
     lastAddr = hp[0] + (hp[1].equals("5555") ? "" : ":" + hp[1]);
     prefs.edit().putString("addr", lastAddr).apply();
     busy = true;
@@ -243,11 +248,20 @@ public class MainActivity extends Activity {
           conn = null;
           AdbKey k = ensureKey();
           if (k == null) { busy = false; return; }
+          Tls tls = tls();
+          if (pp != null) {
+            if (tls == null) { fail(L.t("a214")); return; }
+            postMsg(L.t("a210", pp[0] + ":" + pp[1]), MUTED);
+            String guid = AdbPair.pair(pp[0], Integer.parseInt(pp[1]), code, k, tls);
+            postMsg(L.t("a211", guid), OKC);
+          }
           conn = AdbConn.connect(hp[0], Integer.parseInt(hp[1]), k, 60, new AdbConn.AuthListener() {
             public void onAllowNeeded() { postMsg(L.t("a011"), WARN); }
-          });
+          }, tls);
           postMsg(L.t("a171", conn.addr), OKC);
           diagnose();
+        } catch (AdbPair.WrongCode e) { failW(L.t("a212"));
+        } catch (AdbConn.NotPaired e) { failW(L.t("a213"));
         } catch (AdbConn.TlsRequired e) { fail(L.t("a013"));
         } catch (AdbConn.NotAllowed e) { fail(L.t("a014"));
         } catch (ConnectException e) { fail(L.t("a012"));
@@ -256,6 +270,105 @@ public class MainActivity extends Activity {
         } catch (RuntimeException e) { fail(L.t("a015", e.toString())); }
       }
     }).start();
+  }
+
+  /** Conscrypt (TLS 1.3 + экспорт ключа) из APK; null — не загрузился (тогда только порт 5555). */
+  Tls tlsImpl;
+  boolean tlsTried;
+  synchronized Tls tls() {
+    if (!tlsTried) {
+      tlsTried = true;
+      try { ConscryptTls c = new ConscryptTls(); c.check(); tlsImpl = c; }
+      catch (Throwable e) { android.util.Log.w("CARKIT", "conscrypt: " + e); tlsImpl = null; }
+    }
+    return tlsImpl;
+  }
+
+  /** Ошибка беспроводной отладки — вернуться на её экран, а не на главный. */
+  void failW(final String msg) {
+    busy = false;
+    if (conn != null) conn.close();
+    conn = null;
+    eng = null;
+    ui.post(new Runnable() { public void run() { showWireless(msg); } });
+  }
+
+  // ---------------------------------------------------------------- беспроводная отладка (Android 11+)
+
+  void showWireless(final String msg) {
+    clear();
+    title(L.t("a200"));
+    text(L.t("a201"), MUTED, 14);
+    if (msg != null) text(msg, WARN, 15);
+    final TextView status = text("", MUTED, 13);
+    final EditText code = field(L.t("a202"), prefs.getString("wcode", ""), InputType.TYPE_CLASS_NUMBER);
+    final EditText pair = field(L.t("a203"), prefs.getString("wpair", ""), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    final EditText con = field(L.t("a204"), prefs.getString("wcon", ""), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+    code.setText("");
+    button(L.t("a205"), false, new View.OnClickListener() {
+      public void onClick(View v) { discover(pair, con, status); }
+    });
+    button(L.t("a206"), true, new View.OnClickListener() {
+      public void onClick(View v) {
+        String c = code.getText().toString().trim(), p = pair.getText().toString().trim(), cn = con.getText().toString().trim();
+        if (!c.matches("^\\d{6}$")) { toastMsg(L.t("a207")); return; }
+        if (Scan.parseAddr(p) == null) { toastMsg(L.t("a208")); return; }
+        if (cn.length() == 0 || Scan.parseAddr(cn) == null) { toastMsg(L.t("a209")); return; }
+        prefs.edit().putString("wpair", p).putString("wcon", cn).apply();
+        connect(cn, p, c);
+      }
+    });
+    button(L.t("a215"), false, new View.OnClickListener() {
+      public void onClick(View v) {
+        String cn = con.getText().toString().trim();
+        if (cn.length() == 0 || Scan.parseAddr(cn) == null) { toastMsg(L.t("a209")); return; }
+        prefs.edit().putString("wcon", cn).apply();
+        connect(cn);
+      }
+    });
+    button(L.t("a071"), false, new View.OnClickListener() { public void onClick(View v) { showHome(null); } });
+    text(L.t("a216"), MUTED, 13);
+  }
+
+  EditText field(String hint, String value, int type) {
+    EditText e = new EditText(this);
+    e.setHint(hint);
+    e.setText(value);
+    e.setTextColor(TXT);
+    e.setHintTextColor(MUTED);
+    e.setSingleLine(true);
+    e.setInputType(type);
+    page.addView(e, lp(-1, -2, 8));
+    return e;
+  }
+
+  /** Поиск портов беспроводной отладки по mDNS (_adb-tls-pairing._tcp и _adb-tls-connect._tcp) — 8 секунд. */
+  void discover(final EditText pair, final EditText con, final TextView status) {
+    if (busy) return;
+    busy = true;
+    setText(status, L.t("a217"), MUTED);
+    new Thread(new Runnable() {
+      public void run() {
+        final java.util.List<String> pl = new Nsd(MainActivity.this).find("_adb-tls-pairing._tcp", 8000);
+        final java.util.List<String> cl = new Nsd(MainActivity.this).find("_adb-tls-connect._tcp", 5000);
+        busy = false;
+        ui.post(new Runnable() {
+          public void run() {
+            if (!pl.isEmpty()) pair.setText(pl.get(0));
+            if (!cl.isEmpty()) con.setText(pick(cl, pl.isEmpty() ? "" : pl.get(0)));
+            if (pl.isEmpty() && cl.isEmpty()) { status.setText(L.t("a218")); status.setTextColor(WARN); }
+            else { status.setText(L.t("a219", pl.size(), cl.size())); status.setTextColor(OKC); }
+          }
+        });
+      }
+    }).start();
+  }
+
+  /** Порт подключения той же магнитолы, что и порт сопряжения (по IP). */
+  static String pick(java.util.List<String> cl, String pairAddr) {
+    String ip = pairAddr.contains(":") ? pairAddr.substring(0, pairAddr.lastIndexOf(':')) : "";
+    for (String c : cl) if (ip.length() > 0 && c.startsWith(ip + ":")) return c;
+    return cl.get(0);
   }
 
   void fail(final String msg) {
@@ -492,8 +605,14 @@ public class MainActivity extends Activity {
             return;
           }
           if (delay > 0) Thread.sleep(delay * 1000L);
+          String pairA = getIntent().getStringExtra("pair"), codeA = getIntent().getStringExtra("code");
+          if (pairA != null) {
+            String[] pp = Scan.parseAddr(pairA);
+            alog("AUTOTEST PAIRED " + AdbPair.pair(pp[0], Integer.parseInt(pp[1]), codeA, k, tls()));
+          }
           String[] hp = Scan.parseAddr(what);
-          conn = AdbConn.connect(hp[0], Integer.parseInt(hp[1]), k, 20, null);
+          conn = AdbConn.connect(hp[0], Integer.parseInt(hp[1]), k, 20, null, tls());
+          alog("AUTOTEST TLS " + conn.tls);
           alog("AUTOTEST CONNECTED " + conn.banner);
           eng = new Engine(conn, data, L, new Engine.Log() {
             public void line(String t, int kind) { alog("  " + t); }

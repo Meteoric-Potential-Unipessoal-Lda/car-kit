@@ -50,7 +50,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$KitVersion = '0.4'
+$KitVersion = '0.5'
 $KitName = 'car-kit'
 $KitRepo = 'Meteoric-Potential-Unipessoal-Lda/car-kit'
 try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}

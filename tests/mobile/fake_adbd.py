@@ -4,9 +4,11 @@
 # python3 fake_adbd.py PORT   Окружение:
 #   FAKE_KEYS=файл   разрешённые ключи (формат adb_keys: base64 имя), сюда же дописывается ключ после «Разрешить»
 #   FAKE_ALLOW=1     на экране магнитолы «нажали Разрешить» (иначе новый ключ не принимается — клиент ждёт и сдаётся)
-#   FAKE_TLS=1       ответить STLS, как порт беспроводной отладки Android 11+
+#   FAKE_TLS=1       ответить STLS, как порт беспроводной отладки Android 11+, и закрыть (клиент без TLS)
+#   FAKE_TLSCA=файл  TLS-порт беспроводной отладки: STLS -> TLS 1.3, сертификат клиента должен быть в файле (PEM),
+#                    дальше обычный протокол внутри TLS (как adbd Android 11+ после сопряжения)
 #   FAKE_MAXDATA=N   размер куска WRTE (по умолчанию 4096 — как у старых adbd, ответ идёт многими кусками)
-import os, socket, struct, subprocess, sys, threading, base64, hashlib
+import os, socket, struct, subprocess, sys, threading, base64, hashlib, ssl, tempfile, datetime
 
 CNXN, AUTH, OPEN, OKAY, CLSE, WRTE, STLS = 0x4e584e43, 0x48545541, 0x4e45504f, 0x59414b4f, 0x45534c43, 0x45545257, 0x534c5453
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -68,11 +70,46 @@ def shell(cmd):
     r = subprocess.run(['python3', MOCK, '-s', serial, 'shell', cmd], env=env, capture_output=True)
     return r.stdout + r.stderr
 
+SRV_CTX = None
+def tls_ctx():
+    global SRV_CTX
+    if SRV_CTX: return SRV_CTX
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    k = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    nm = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'adbd')])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    c = x509.CertificateBuilder().subject_name(nm).issuer_name(nm).public_key(k.public_key()).serial_number(1) \
+        .not_valid_before(now - datetime.timedelta(days=1)).not_valid_after(now + datetime.timedelta(days=30)).sign(k, hashes.SHA256())
+    d = tempfile.mkdtemp()
+    open(d + '/c.pem', 'wb').write(c.public_bytes(serialization.Encoding.PEM))
+    open(d + '/k.pem', 'wb').write(k.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_3
+    ctx.load_cert_chain(d + '/c.pem', d + '/k.pem')
+    ctx.verify_mode = ssl.CERT_REQUIRED
+    ctx.load_verify_locations(os.environ['FAKE_TLSCA'])
+    SRV_CTX = ctx
+    return ctx
+
 def handle(s):
     try:
         cmd, a0, a1, data = read(s)
         if cmd != CNXN: log('expected CNXN'); return
         if os.environ.get('FAKE_TLS'): send(s, STLS, 0x01000000, 0); return
+        if os.environ.get('FAKE_TLSCA'):
+            send(s, STLS, 0x01000000, 0)
+            cmd, a0, a1, data = read(s)
+            if cmd != STLS: log('expected STLS from client'); return
+            try:
+                s = tls_ctx().wrap_socket(s, server_side=True)
+            except ssl.SSLError as e:
+                log('tls refused:', e.reason); return
+            log('tls ok', s.version())
+            run_session(s)
+            return
         token = os.urandom(20)
         send(s, AUTH, 1, 0, token)
         ok = False
@@ -90,6 +127,16 @@ def handle(s):
                     log('key allowed:', pub.split()[-1]); ok = True
                 else:
                     log('key shown, nobody pressed Allow'); threading.Event().wait(60); return
+        run_session(s)
+    except (EOFError, ConnectionResetError, BrokenPipeError):
+        pass
+    except Exception as ex:
+        log('error', repr(ex))
+    finally:
+        s.close()
+
+def run_session(s):
+    try:
         send(s, CNXN, 0x01000000, MAXDATA, b'device::ro.product.name=fake;ro.product.model=FakeUnit;\0')
         local = 100
         while True:

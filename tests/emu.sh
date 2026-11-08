@@ -53,10 +53,12 @@ adb shell pm list packages | grep -q net.zherdyev.carlauncher && { echo "FAIL л
 #    adb-сервер на это время останавливаем — эмулятор держит одно подключение.
 if [ -n "$MAPK" ]; then
   CLS="$(mktemp -d)"
-  javac -encoding UTF-8 -d "$CLS" "$ROOT"/mobile/src/net/zherdyev/carkit/{AdbKey,AdbConn,B64,Data,Engine,Lang,Pat,Scan,Sh}.java "$ROOT/tests/mobile/Cli.java"
+  CV=2.5.2; CJ="$(mktemp -d)/conscrypt.jar"
+  curl -fsSL -o "$CJ" "https://repo1.maven.org/maven2/org/conscrypt/conscrypt-openjdk-uber/$CV/conscrypt-openjdk-uber-$CV.jar"
+  javac -encoding UTF-8 -cp "$CJ" -d "$CLS" "$ROOT"/mobile/src/net/zherdyev/carkit/{AdbKey,AdbConn,AdbPair,B64,ConscryptTls,Data,Ed25519,Engine,Lang,Pat,Scan,Sh,Spake2,Tls}.java "$ROOT"/tests/mobile/{Cli,TestTls,PairServer,CryptoTest}.java
   DB="$(adb shell pm list packages -d | tr -d '\r' | sort)"
   adb kill-server; sleep 2
-  java -cp "$CLS" net.zherdyev.carkit.Cli --root "$ROOT" --adb 127.0.0.1:5555 --key "$HOME/.android/adbkey" --mode both --kinds anim,disable --journal "$LOGS/m_jvm.tsv" > "$LOGS/m_jvm.log" 2>&1
+  java -cp "$CLS:$CJ" net.zherdyev.carkit.Cli --root "$ROOT" --adb 127.0.0.1:5555 --key "$HOME/.android/adbkey" --mode both --kinds anim,disable --journal "$LOGS/m_jvm.tsv" > "$LOGS/m_jvm.log" 2>&1
   adb start-server; adb wait-for-device
   expect m_jvm 'CONNECTED device::'
   expect m_jvm 'PLATFORM unknown'
@@ -89,6 +91,84 @@ if [ -n "$MAPK" ]; then
   expect m_app 'AUTOTEST APPLIED'
   expect m_app 'AUTOTEST ROLLBACK 0'
   expect m_app 'AUTOTEST OK'
+  # 6. Беспроводная отладка Android 11+ на настоящем adbd (TLS 1.3): включаем, подключаемся с сертификатом ключа
+  adb shell svc wifi enable > /dev/null 2>&1; sleep 3
+  adb shell settings put global adb_wifi_enabled 1
+  # Android 11 может спросить «Разрешить отладку по Wi-Fi в этой сети?» — нажимаем «Всегда» и «Разрешить»
+  tapw() {
+    adb shell uiautomator dump /sdcard/wq.xml > /dev/null 2>&1; adb pull /sdcard/wq.xml "$LOGS/wq.xml" > /dev/null 2>&1
+    python3 - "$LOGS/wq.xml" "$1" <<'PY'
+import re, sys
+t = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+for m in re.finditer(r'<node [^>]*text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', t):
+    if re.fullmatch(sys.argv[2], m.group(1).strip(), re.I):
+        print((int(m.group(2)) + int(m.group(4))) // 2, (int(m.group(3)) + int(m.group(5))) // 2); break
+PY
+  }
+  TP=""; for i in $(seq 1 30); do
+    TP="$(adb shell getprop service.adb.tls.port | tr -d '\r')"; [ -n "$TP" ] && [ "$TP" != "0" ] && break
+    if [ $((i % 5)) -eq 3 ]; then
+      C="$(tapw 'Always allow.*')"; [ -n "$C" ] && adb shell input tap $C
+      C="$(tapw 'Allow')"; [ -n "$C" ] && { echo "tapped Allow (wireless debugging network)"; adb shell input tap $C; }
+    fi
+    sleep 1
+  done
+  echo "wireless debugging tls port: [$TP]"
+  if [ -n "$TP" ] && [ "$TP" != "0" ]; then
+    adb push "$HOME/.android/adbkey.pub" /data/local/tmp/host.pub > /dev/null
+    adb shell 'cat /data/local/tmp/host.pub >> /data/misc/adb/adb_keys' || true
+    adb forward tcp:7102 tcp:$TP > /dev/null
+    java -cp "$CLS:$CJ" net.zherdyev.carkit.Cli --root "$ROOT" --adb 127.0.0.1:7102 --tls conscrypt --key "$HOME/.android/adbkey" --mode diag > "$LOGS/m_tls_jvm.log" 2>&1
+    expect m_tls_jvm 'tls=true'
+    expect m_tls_jvm 'PLATFORM unknown'
+    reject m_tls_jvm 'Exception'
+    adb forward --remove tcp:7102 > /dev/null 2>&1
+    # приложение на «телефоне» (Conscrypt из APK) -> TLS-порт adbd
+    adb logcat -c
+    adb shell am force-stop net.zherdyev.carkit
+    adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest 127.0.0.1:$TP --es kinds anim --ei delay 2 > /dev/null
+    sleep 45
+    adb logcat -d -s CARKIT:I > "$LOGS/m_app_tls.log" 2>&1
+    expect m_app_tls 'AUTOTEST TLS true'
+    expect m_app_tls 'AUTOTEST OK'
+    # сопряжение по коду с настоящим adbd: открыть «Беспроводная отладка» -> «Подключение по коду», прочитать код и порт с экрана
+    adb shell am start -n com.android.settings/.SubSettings -e :settings:show_fragment com.android.settings.development.WirelessDebuggingFragment > /dev/null 2>&1
+    sleep 4
+    adb shell uiautomator dump /sdcard/w1.xml > /dev/null 2>&1; adb pull /sdcard/w1.xml "$LOGS/w1.xml" > /dev/null 2>&1
+    XY="$(python3 - "$LOGS/w1.xml" <<'PY'
+import re, sys
+t = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+for m in re.finditer(r'<node [^>]*text="([^"]*)"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', t):
+    if 'pairing code' in m.group(1).lower():
+        print((int(m.group(2)) + int(m.group(4))) // 2, (int(m.group(3)) + int(m.group(5))) // 2); break
+PY
+)"
+    if [ -n "$XY" ]; then
+      adb shell input tap $XY; sleep 4
+      adb shell uiautomator dump /sdcard/w2.xml > /dev/null 2>&1; adb pull /sdcard/w2.xml "$LOGS/w2.xml" > /dev/null 2>&1
+      adb exec-out screencap -p > "$LOGS/pairing.png" 2>/dev/null || true
+      read CODE PADDR <<< "$(python3 - "$LOGS/w2.xml" <<'PY'
+import re, sys
+t = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+texts = re.findall(r'text="([^"]*)"', t)
+code = next((x for x in texts if re.fullmatch(r'\d{6}', x)), '')
+addr = next((x for x in texts if re.fullmatch(r'\d+\.\d+\.\d+\.\d+:\d+', x)), '')
+print(code, addr)
+PY
+)"
+      echo "pairing code: [$CODE] address: [$PADDR]"
+      if [ -n "$CODE" ] && [ -n "$PADDR" ]; then
+        adb logcat -c
+        adb shell am start -n net.zherdyev.carkit/.MainActivity --es autotest 127.0.0.1:$TP --es pair "$PADDR" --es code "$CODE" --es kinds anim > /dev/null
+        sleep 45
+        adb logcat -d -s CARKIT:I > "$LOGS/m_app_pair.log" 2>&1
+        expect m_app_pair 'AUTOTEST PAIRED'
+        expect m_app_pair 'AUTOTEST OK'
+      else echo "SKIP сопряжение с настоящим adbd: код не прочитан с экрана"; fi
+    else echo "SKIP сопряжение с настоящим adbd: нет кнопки «Pair device with pairing code»"; fi
+    adb shell input keyevent 4; adb shell input keyevent 3
+    adb shell settings put global adb_wifi_enabled 0
+  else echo "SKIP беспроводная отладка: adbd не открыл TLS-порт (нет Wi-Fi в эмуляторе?)"; fi
   adb unroot > /dev/null 2>&1; sleep 3; adb wait-for-device
   # обычный запуск: главный экран нарисован
   adb shell am force-stop net.zherdyev.carkit

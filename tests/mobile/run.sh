@@ -1,7 +1,9 @@
 #!/bin/bash
 # Тесты car-kit Mobile на обычной Java (без телефона и Android SDK):
 #   логика (Engine) на подставных магнитолах tests/mock_adb.py, протокол ADB (AdbConn) через tests/mobile/fake_adbd.py,
-#   совпадение плана с набором на ноутбуке (parity.sh, нужен pwsh) и правил защиты с carkit.ps1.
+#   совпадение плана с набором на ноутбуке (parity.sh, нужен pwsh) и правил защиты с carkit.ps1;
+#   беспроводная отладка Android 11+: SPAKE2 (точки BoringSSL), сопряжение, TLS-порт.
+#   CONSCRYPT_JAR=conscrypt-openjdk-uber.jar — настоящий TLS 1.3 с экспортом ключа; ADB_BIN=adb — проверка с настоящим «adb pair».
 # bash tests/mobile/run.sh [--no-parity]
 set -u
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -10,8 +12,18 @@ FAIL=0
 cd "$ROOT"
 python3 dev/gen_mobile_patterns.py --check || FAIL=1
 SRC=mobile/src/net/zherdyev/carkit
-javac -encoding UTF-8 -d "$WORK/cls" $SRC/AdbKey.java $SRC/AdbConn.java $SRC/B64.java $SRC/Data.java $SRC/Engine.java $SRC/Lang.java $SRC/Pat.java $SRC/Scan.java $SRC/Sh.java tests/mobile/Cli.java || exit 1
-cli() { local name=$1; shift; java -cp "$WORK/cls" net.zherdyev.carkit.Cli --root "$ROOT" "$@" > "$WORK/$name.log" 2>&1; }
+JSRC="$SRC/AdbKey.java $SRC/AdbConn.java $SRC/AdbPair.java $SRC/B64.java $SRC/ConscryptTls.java $SRC/Data.java $SRC/Ed25519.java $SRC/Engine.java $SRC/Lang.java $SRC/Pat.java $SRC/Scan.java $SRC/Sh.java $SRC/Spake2.java $SRC/Tls.java tests/mobile/Cli.java tests/mobile/CryptoTest.java tests/mobile/PairServer.java tests/mobile/TestTls.java"
+if [ -n "${CONSCRYPT_JAR:-}" ]; then
+  CP="$WORK/cls:$CONSCRYPT_JAR"
+  javac -encoding UTF-8 -cp "$CONSCRYPT_JAR" -d "$WORK/cls" $JSRC || exit 1
+else
+  # без Conscrypt — заглушка только для компиляции (тесты с настоящим TLS пропускаются)
+  mkdir -p "$WORK/stub/org/conscrypt"
+  printf 'package org.conscrypt;\npublic final class Conscrypt {\n  public static java.security.Provider newProvider() { throw new UnsupportedOperationException("stub"); }\n  public static byte[] exportKeyingMaterial(javax.net.ssl.SSLSocket s, String l, byte[] c, int n) throws javax.net.ssl.SSLException { throw new UnsupportedOperationException("stub"); }\n}\n' > "$WORK/stub/org/conscrypt/Conscrypt.java"
+  CP="$WORK/cls"
+  javac -encoding UTF-8 -sourcepath "$WORK/stub" -d "$WORK/cls" $JSRC || exit 1
+fi
+cli() { local name=$1; shift; java -cp "$CP" net.zherdyev.carkit.Cli --root "$ROOT" "$@" > "$WORK/$name.log" 2>&1; }
 expect() { if grep -qF -- "$2" "$WORK/$1.log"; then echo "PASS $1: $2"; else echo "FAIL $1: нет «$2»"; FAIL=1; fi; }
 reject() { if grep -qF -- "$2" "$WORK/$1.log"; then echo "FAIL $1: есть «$2»"; FAIL=1; else echo "PASS $1: нет «$2»"; fi; }
 mock() { export MOCK_BRAND=$1 MOCK_STATE="$WORK/$1.json"; rm -f "$MOCK_STATE"; }
@@ -97,8 +109,60 @@ cli p_refused --adb 127.0.0.1:$PORT --key "$WORK/phonekey" --mode diag
 expect p_refused 'ConnectException'
 grep -q 'bad checksum\|bad magic\|error' "$WORK/adbd.log" && { echo "FAIL adbd: ошибки протокола"; cat "$WORK/adbd.log"; FAIL=1; } || echo "PASS adbd: протокол без ошибок"
 
-# 8. План телефона = план ноутбука (нужен pwsh)
-if [ "${1:-}" != "--no-parity" ] && command -v pwsh >/dev/null; then bash tests/mobile/parity.sh "$WORK/cls" || FAIL=1; fi
+# 8. Беспроводная отладка Android 11+: SPAKE2 как в BoringSSL (точки M, N из их seed), согласие ключей
+java -cp "$CP" net.zherdyev.carkit.CryptoTest > "$WORK/crypto.log" 2>&1 || FAIL=1
+grep '^FAIL' "$WORK/crypto.log"; echo "PASS crypto: $(grep -c '^PASS' "$WORK/crypto.log") проверок"
+# 8б. Сопряжение по коду без шифрования (пакеты, HKDF, AES-GCM, обмен PeerInfo) и неверный код
+P2=$((PORT + 1))
+java -cp "$CP" net.zherdyev.carkit.PairServer $P2 482913 "$WORK/paired_keys" plain 2 > "$WORK/pairsrv.log" 2>&1 &
+sleep 1
+cli w_pair --pair 127.0.0.1:$P2 --code 482913 --tls plain --key "$WORK/wkey" --dump-cert "$WORK/wcert.pem"
+expect w_pair 'PAIRED guid=adb-FAKEUNIT-test'
+cli w_bad --pair 127.0.0.1:$P2 --code 000000 --tls plain --key "$WORK/wkey"
+expect w_bad 'WrongCode'
+sleep 1
+grep -q "car-kit@phone" "$WORK/paired_keys" && echo "PASS w_pair: ключ телефона передан магнитоле" || { echo "FAIL w_pair: ключа нет"; FAIL=1; }
+# 8в. TLS-порт: STLS -> TLS 1.3 с сертификатом сопряжённого ключа -> диагностика, применение, откат; чужой ключ — «не сопряжён»
+P3=$((PORT + 2))
+mock fyt
+FAKE_TLSCA="$WORK/wcert.pem" python3 tests/mobile/fake_adbd.py $P3 2> "$WORK/tlsadbd.log" &
+TLSD=$!
+sleep 1
+cli w_tls --adb 127.0.0.1:$P3 --tls jdk --key "$WORK/wkey" --mode both --journal "$WORK/w.tsv"
+expect w_tls 'tls=true'
+expect w_tls 'APPLIED 7'
+expect w_tls 'ROLLED BACK, LEFT 0'
+cli w_notpaired --adb 127.0.0.1:$P3 --tls jdk --key "$WORK/otherkey2" --mode diag
+expect w_notpaired 'NotPaired'
+cli w_notls --adb 127.0.0.1:$P3 --key "$WORK/wkey" --mode diag
+expect w_notls 'TlsRequired'
+if [ -n "${CONSCRYPT_JAR:-}" ]; then
+  mock fyt
+  cli w_tls_c --adb 127.0.0.1:$P3 --tls conscrypt --key "$WORK/wkey" --mode diag
+  expect w_tls_c 'tls=true'
+  expect w_tls_c 'PLATFORM fyt'
+fi
+kill $TLSD 2>/dev/null
+# 8г. С настоящим TLS (Conscrypt): наш клиент <-> наш сервер, затем настоящий «adb pair» из Android SDK <-> наш сервер
+if [ -n "${CONSCRYPT_JAR:-}" ]; then
+  P4=$((PORT + 3))
+  java -cp "$CP" net.zherdyev.carkit.PairServer $P4 735190 "$WORK/paired_keys2" conscrypt 2 > "$WORK/pairsrv2.log" 2>&1 &
+  sleep 2
+  cli w_pair_c --pair 127.0.0.1:$P4 --code 735190 --tls conscrypt --key "$WORK/wkey"
+  expect w_pair_c 'PAIRED guid=adb-FAKEUNIT-test'
+  if [ -n "${ADB_BIN:-}" ]; then
+    "$ADB_BIN" start-server > /dev/null 2>&1
+    "$ADB_BIN" pair 127.0.0.1:$P4 735190 > "$WORK/w_realadb.log" 2>&1
+    expect w_realadb 'Successfully paired'
+    expect w_realadb 'adb-FAKEUNIT-test'
+    sleep 1
+    HK="$(cut -d' ' -f1 "$HOME/.android/adbkey.pub")"
+    grep -qF "$HK" "$WORK/paired_keys2" && echo "PASS w_realadb: ключ настоящего adb получен и расшифрован" || { echo "FAIL w_realadb: ключа adb нет"; cat "$WORK/pairsrv2.log"; FAIL=1; }
+  else echo "SKIP настоящий adb pair (нет ADB_BIN)"; fi
+else echo "SKIP TLS Conscrypt (нет CONSCRYPT_JAR)"; fi
+
+# 9. План телефона = план ноутбука (нужен pwsh)
+if [ "${1:-}" != "--no-parity" ] && command -v pwsh >/dev/null; then bash tests/mobile/parity.sh "$CP" || FAIL=1; fi
 
 if [ $FAIL -ne 0 ]; then echo "=== logs: $WORK"; for f in "$WORK"/*.log; do echo "--- $f"; tail -25 "$f"; done; fi
 exit $FAIL
